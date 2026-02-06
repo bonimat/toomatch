@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const { width } = Dimensions.get('window');
 
 const SplashScreen = () => {
@@ -35,10 +37,24 @@ const SplashScreen = () => {
             }),
         ]).start();
 
-        // Navigate away
-        setTimeout(() => {
-            navigation.replace('Main');
-        }, 2500); // Shorter duration since we don't need to wait for ball bounce
+        // Check Session & Navigate
+        const checkSession = async () => {
+            try {
+                const session = await AsyncStorage.getItem('user_session');
+                // Wait a bit for animation sake
+                setTimeout(() => {
+                    if (session) {
+                        navigation.replace('Main');
+                    } else {
+                        navigation.replace('Onboarding');
+                    }
+                }, 2000);
+            } catch (e) {
+                navigation.replace('Onboarding');
+            }
+        };
+
+        checkSession();
 
     }, []);
 

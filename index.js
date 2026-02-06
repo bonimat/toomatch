@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import 'react-native-get-random-values'; // Polyfill for uuid
 import { registerRootComponent } from 'expo';
 
 import App from './App';

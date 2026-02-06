@@ -9,6 +9,9 @@ import { StatusBar } from 'expo-status-bar';
 import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import NewMatchScreen from './src/screens/NewMatchScreen';
+import DirectoryScreen from './src/screens/DirectoryScreen';
+import EntityDetailScreen from './src/screens/EntityDetailScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -19,6 +22,10 @@ const PlaceholderScreen = ({ name }) => (
     <Text style={{ color: '#fff' }}>{name}</Text>
   </View>
 );
+
+// Wrapper components to avoid inline function warning
+const HistoryTab = () => <PlaceholderScreen name="HISTORY" />;
+const StatsTab = () => <PlaceholderScreen name="STATS" />;
 
 // Tab Navigator
 function MainTabs() {
@@ -46,7 +53,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="History"
-        component={() => <PlaceholderScreen name="HISTORY" />}
+        component={HistoryTab}
         options={{
           tabBarLabel: 'HISTORY',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>☰</Text>
@@ -54,10 +61,18 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Stats"
-        component={() => <PlaceholderScreen name="STATS" />}
+        component={StatsTab}
         options={{
           tabBarLabel: 'STATS',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚡</Text>
+        }}
+      />
+      <Tab.Screen
+        name="Club"
+        component={DirectoryScreen}
+        options={{
+          tabBarLabel: 'CLUB',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>👥</Text>
         }}
       />
     </Tab.Navigator>
@@ -76,7 +91,9 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen name="EntityDetail" component={EntityDetailScreen} />
 
         {/* Modal for New Match */}
         <Stack.Screen

@@ -1,14 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDashboardStats } from '../services/matchService';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
+    const [userName, setUserName] = useState('CHAMPION');
     const [dashboardData, setDashboardData] = useState({
         stats: { wins: 0, losses: 0, winRate: 0, streak: 0 },
         recentMatches: []
@@ -17,9 +19,42 @@ const HomeScreen = ({ navigation }) => {
     // Fetch data whenever screen comes into focus
     useFocusEffect(
         useCallback(() => {
+            loadUserData();
             loadData();
         }, [])
     );
+
+    const loadUserData = async () => {
+        try {
+            const session = await AsyncStorage.getItem('user_session');
+            if (session) {
+                const user = JSON.parse(session);
+                // Display First Name (uppercase) or Nickname
+                const displayName = user.firstName ? user.firstName.toUpperCase() : user.nickname.toUpperCase();
+                setUserName(displayName);
+            }
+        } catch (e) {
+            console.log("Error loading session:", e);
+        }
+    };
+
+    const handleLogout = async () => {
+        Alert.alert(
+            "Logout",
+            "Are you sure you want to exit?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Logout",
+                    style: "destructive",
+                    onPress: async () => {
+                        await AsyncStorage.clear();
+                        navigation.replace('Splash'); // Reboot app flow
+                    }
+                }
+            ]
+        );
+    };
 
     const loadData = async () => {
         // setLoading(true); // Can skip full loader on refresh for smoother feel
@@ -78,16 +113,18 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.container}>
             <StatusBar style="light" />
 
-            {/* Header */}
+            {/* Header Section */}
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.greeting}>Stats Overview,</Text>
-                    <Text style={styles.username}>CHAMPION</Text>
+                    <Text style={styles.greeting}>WELCOME BACK</Text>
+                    <Text style={styles.username}>{userName}</Text>
                 </View>
-                <Image
-                    source={{ uri: 'https://ui-avatars.com/api/?name=Champion&background=333&color=fff' }}
-                    style={styles.avatar}
-                />
+                <TouchableOpacity onPress={handleLogout}>
+                    <Image
+                        source={{ uri: 'https://ui-avatars.com/api/?name=' + userName + '&background=333&color=fff' }}
+                        style={styles.avatar}
+                    />
+                </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

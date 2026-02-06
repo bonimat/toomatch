@@ -1,0 +1,74 @@
+import { db } from "../../firebaseConfig";
+import { collection, addDoc, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { v4 as uuidv4 } from 'uuid';
+
+const USERS_COLLECTION = "users";
+
+/**
+ * Searches for a user by exact nickname (case-insensitive ideally, but simple for now).
+ * If found, returns the user object.
+ * If not, creates a new user with a generated UUID.
+ */
+export async function getOrCreateUser(nickname) {
+    if (!nickname) return null;
+    const cleanName = nickname.trim();
+
+    try {
+        // 1. Search existing
+        const q = query(collection(db, USERS_COLLECTION), where("nickname", "==", cleanName));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            // Found existing user
+            const doc = snapshot.docs[0];
+            return { id: doc.id, ...doc.data() };
+        }
+
+        // 2. Create new
+        const newUuid = uuidv4();
+        const newUser = {
+            uuid: newUuid, // Helper index as requested
+            nickname: cleanName,
+            createdAt: Timestamp.now(),
+            isRegistered: false, // Flag to distinguish "stub" users from real accounts later
+            // Future-proof fields
+            phoneNumber: null,
+            email: null,
+            firstName: null,
+            lastName: null,
+            city: null,
+            contactsId: null,
+            avatar: null
+        };
+
+        const docRef = await addDoc(collection(db, USERS_COLLECTION), newUser);
+        return { id: docRef.id, ...newUser };
+
+    } catch (e) {
+        console.error("Error in getOrCreateUser:", e);
+        throw e;
+    }
+}
+
+/**
+ * Basic search for autocomplete (future use)
+ */
+export async function searchUsers(searchText) {
+    // Firestore lacks native substring search. 
+    // We can implement "startsWith" using: where('nickname', '>=', text) and where('nickname', '<=', text + '\uf8ff')
+    // For now, let's keep it simple or implement if requested.
+    return [];
+}
+
+/**
+ * Fetch all users for directory/picker
+ */
+export async function getAllUsers() {
+    try {
+        const snapshot = await getDocs(collection(db, USERS_COLLECTION));
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+}
