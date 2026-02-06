@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TooMatch - Splash 3D</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #000;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            color: white;
+            overflow: hidden;
+        }
+
+        .device {
+            width: 100%;
+            max-width: 375px;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            perspective: 800px;
+        }
+
+        /* Ambient Glow */
+        .ambient-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120%;
+            height: 120%;
+            background: radial-gradient(circle, rgba(204, 255, 0, 0.03) 0%, rgba(0, 0, 0, 0) 70%);
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        /* 3D Scene Container */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-style: preserve-3d;
+        }
+
+        /* Wrapper handles the Trajectory (Move & Scale) */
+        .ball-wrapper {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            animation: bouncePath 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            opacity: 0;
+            /* No preserve-3d here for lighting to work easiest as overlay */
+        }
+
+        /* 1. TEXTURE LAYER (Spins) */
+        .ball-texture {
+            width: 100%;
+            height: 100%;
+            background: #ccff00;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            /* Topspin Animation */
+            animation: topspin 2.5s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+        }
+
+        /* Seams attached to texture */
+        .ball-texture::after {
+            content: '';
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            border: 4px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            border-left-color: transparent;
+            border-right-color: transparent;
+            transform: rotate(45deg);
+        }
+
+        .ball-texture::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(-45deg);
+        }
+
+        /* 2. LIGHTING LAYER (Static - Does NOT Spin) */
+        /* This creates the 3D sphere illusion because light/shadow stays fixed relative to the screen */
+        .ball-lighting {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 50%;
+            z-index: 2;
+            /* Above texture */
+            box-shadow:
+                inset -8px -8px 25px rgba(0, 0, 0, 0.7),
+                /* Deep shadow bottom-right */
+                inset 5px 5px 15px rgba(255, 255, 255, 0.4),
+                /* Highlight top-left */
+                0 0 20px rgba(204, 255, 0, 0.3);
+            /* External glow */
+        }
+
+        /* Impact Ripple */
+        .ripple {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(70deg);
+            width: 100px;
+            height: 100px;
+            border: 2px solid #ccff00;
+            border-radius: 50%;
+            opacity: 0;
+            animation: rippleEffect 2.5s linear forwards;
+        }
+
+        /* Animation Keyframes */
+
+        @keyframes bouncePath {
+            0% {
+                transform: translate3d(150px, -400px, -1200px) scale(0.4);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            40% {
+                /* Impact */
+                transform: translate3d(0, 50px, -200px) scale(1) scaleY(0.6);
+                animation-timing-function: ease-out;
+            }
+
+            45% {
+                transform: translate3d(0, 50px, -200px) scale(1) scaleY(1.1);
+            }
+
+            100% {
+                /* Exit */
+                transform: translate3d(-100px, -200px, 500px) scale(1.6);
+                opacity: 0;
+            }
+        }
+
+        @keyframes topspin {
+            0% {
+                transform: rotateX(0deg) rotateY(20deg);
+            }
+
+            100% {
+                transform: rotateX(-1440deg) rotateY(20deg);
+            }
+        }
+
+        @keyframes rippleEffect {
+
+            0%,
+            38% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotateX(70deg) scale(0.1);
+            }
+
+            40% {
+                opacity: 0.6;
+                transform: translate(-50%, -50%) rotateX(70deg) scale(0.5);
+                border-width: 4px;
+            }
+
+            60% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotateX(70deg) scale(1.5);
+                border-width: 0px;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* UI Fade In */
+        .logo-container {
+            text-align: center;
+            opacity: 0;
+            animation: fadeInUi 1s ease-out 1.5s forwards;
+            z-index: 10;
+        }
+
+        .logo-title {
+            font-size: 52px;
+            font-weight: 900;
+            font-style: italic;
+            text-transform: uppercase;
+            letter-spacing: -3px;
+            color: white;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin: 0;
+            line-height: 1;
+        }
+
+        .logo-subtitle {
+            font-size: 14px;
+            color: #ccff00;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        @keyframes fadeInUi {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="device" onclick="window.location.href='mobile_home_mockup.html'">
+        <div class="ambient-glow"></div>
+
+        <div class="scene">
+            <div class="ripple"></div>
+            <div class="ball-wrapper">
+                <div class="ball-texture"></div>
+                <div class="ball-lighting"></div>
+            </div>
+        </div>
+
+        <div class="logo-container">
+            <h1 class="logo-title">TooMatch</h1>
+            <div class="logo-subtitle">Serve It</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
