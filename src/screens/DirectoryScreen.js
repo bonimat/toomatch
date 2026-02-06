@@ -1,21 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 import { db } from '../../firebaseConfig';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { Ionicons } from '@expo/vector-icons';
+import { seedMatches } from '../services/matchService'; // Import seed function
 
 export default function DirectoryScreen({ navigation }) {
-    const [activeTab, setActiveTab] = useState('players'); // 'players' | 'venues'
+    const [users, setUsers] = useState([]);
+    const [venues, setVenues] = useState([]);
+    const [activeTab, setActiveTab] = useState('players');
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState([]);
+    const [seeding, setSeeding] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
             fetchData();
         }, [activeTab])
     );
+
+    const handleSeed = async () => {
+        setSeeding(true);
+        await seedMatches();
+        setSeeding(false);
+        alert("Added 13+ test matches! Refresh Stats.");
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -60,7 +71,7 @@ export default function DirectoryScreen({ navigation }) {
                     ) : (
                         <>
                             <View style={[styles.avatarPlaceholder, styles.venueAvatar]}>
-                                <Text style={styles.avatarText}>📍</Text>
+                                <Ionicons name="location" size={20} color="#ccff00" />
                             </View>
                             <View>
                                 <Text style={styles.name}>{item.name}</Text>
@@ -76,14 +87,20 @@ export default function DirectoryScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
-
+            {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.title}>CLUB DIRECTORY</Text>
+                <Text style={styles.headerTitle}>CLUBHOUSE</Text>
+
+                {/* TEMP: Test Data Button */}
+                <TouchableOpacity onPress={handleSeed} disabled={seeding} style={{ marginRight: 10, padding: 5, backgroundColor: '#333', borderRadius: 5 }}>
+                    <Text style={{ color: 'white', fontSize: 10 }}>{seeding ? '...' : 'Seed Data'}</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
-                    style={styles.addBtn}
+                    style={styles.addButton}
                     onPress={() => navigation.navigate('EntityDetail', { type: activeTab === 'players' ? 'player' : 'venue', id: null })}
                 >
-                    <Text style={styles.addBtnText}>+</Text>
+                    <Ionicons name="add" size={24} color="black" />
                 </TouchableOpacity>
             </View>
 
@@ -137,25 +154,19 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center'
     },
-    title: {
+    headerTitle: {
         fontSize: 24,
         fontWeight: '900',
         color: '#fff',
         letterSpacing: 1,
     },
-    addBtn: {
+    addButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    addBtnText: {
-        fontSize: 24,
-        color: '#ccff00',
-        marginTop: -2,
-        fontWeight: '400',
     },
     toggleContainer: {
         flexDirection: 'row',

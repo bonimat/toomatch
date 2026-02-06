@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
 // Screens
 import SplashScreen from './src/screens/SplashScreen';
@@ -11,6 +12,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import NewMatchScreen from './src/screens/NewMatchScreen';
 import DirectoryScreen from './src/screens/DirectoryScreen';
 import EntityDetailScreen from './src/screens/EntityDetailScreen';
+import StatsScreen from './src/screens/StatsScreen';
+import HistoryScreen from './src/screens/HistoryScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 
 const Stack = createStackNavigator();
@@ -25,7 +28,6 @@ const PlaceholderScreen = ({ name }) => (
 
 // Wrapper components to avoid inline function warning
 const HistoryTab = () => <PlaceholderScreen name="HISTORY" />;
-const StatsTab = () => <PlaceholderScreen name="STATS" />;
 
 // Tab Navigator
 function MainTabs() {
@@ -41,6 +43,12 @@ function MainTabs() {
         },
         tabBarActiveTintColor: '#ccff00',
         tabBarInactiveTintColor: '#666',
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+          letterSpacing: 0.5,
+          marginTop: 4
+        }
       }}
     >
       <Tab.Screen
@@ -48,23 +56,23 @@ function MainTabs() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'HOME',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⬡</Text> // Using text icons for now, replace with Vectors
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={24} color={color} />
         }}
       />
       <Tab.Screen
         name="History"
-        component={HistoryTab}
+        component={HistoryScreen}
         options={{
           tabBarLabel: 'HISTORY',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>☰</Text>
+          tabBarIcon: ({ color, size }) => <Ionicons name="time" size={24} color={color} />
         }}
       />
       <Tab.Screen
         name="Stats"
-        component={StatsTab}
+        component={StatsScreen}
         options={{
           tabBarLabel: 'STATS',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚡</Text>
+          tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" size={24} color={color} />
         }}
       />
       <Tab.Screen
@@ -72,7 +80,7 @@ function MainTabs() {
         component={DirectoryScreen}
         options={{
           tabBarLabel: 'CLUB',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>👥</Text>
+          tabBarIcon: ({ color, size }) => <Ionicons name="people" size={24} color={color} />
         }}
       />
     </Tab.Navigator>

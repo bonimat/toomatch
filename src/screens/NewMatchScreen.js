@@ -30,6 +30,7 @@ export default function NewMatchScreen({ navigation }) {
     const [notes, setNotes] = useState("");
     const [saving, setSaving] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [scoreWarning, setScoreWarning] = useState("");
 
     // Picker State
     const [modalVisible, setModalVisible] = useState(false);
@@ -59,6 +60,54 @@ export default function NewMatchScreen({ navigation }) {
         loadData();
     }, []);
 
+    // Helper: Simple Validation for Tennis Rules
+    const validateScore = (currentSets) => {
+        let warning = "";
+        for (let i = 0; i < currentSets.length; i++) {
+            const set = currentSets[i];
+            const s1 = parseInt(set.s1);
+            const s2 = parseInt(set.s2);
+            const isTieBreak = set.isTieBreak;
+
+            // Skip empty checks until both are numbers
+            if (isNaN(s1) || isNaN(s2)) continue;
+
+            const max = Math.max(s1, s2);
+            const min = Math.min(s1, s2);
+            const diff = max - min;
+
+            // --- TIE BREAK LOGIC ---
+            if (isTieBreak) {
+                // Must have 2 point margin
+                if (diff < 2) {
+                    warning = `Set ${i + 1} (TB): Needs 2 point margin (e.g. 10-8).`;
+                }
+                // Tie break usually at least to 7 or 10 points
+                if (max < 7) {
+                    warning = `Set ${i + 1} (TB): Score too low for a tie-break.`;
+                }
+                // No upper limit warning for TB
+                continue;
+            }
+
+            // --- STANDARD SET LOGIC ---
+            if (max < 6 && max > 0) {
+                // Incomplete?
+            }
+
+            if (max === 6 && diff < 2) {
+                warning = `Set ${i + 1}: 6-${min} is unusual. Usually finishes at 7-5 or 7-6.`;
+            }
+            if (max === 7 && diff > 2 && min !== 0) {
+                warning = `Set ${i + 1}: 7-${min} is unusual. Standard sets end 7-5 or 7-6.`;
+            }
+            if (max > 7) {
+                warning = `Set ${i + 1}: High score detected. Enable 'TB' if this is a Tie-Break?`;
+            }
+        }
+        setScoreWarning(warning);
+    };
+
     // ... (keep existing handlers)
     const openPicker = (field) => {
         setTargetField(field);
@@ -73,13 +122,21 @@ export default function NewMatchScreen({ navigation }) {
     };
 
     const addSet = () => {
-        setSets([...sets, { s1: "", s2: "" }]);
+        setSets([...sets, { s1: "", s2: "", isTieBreak: false }]);
     };
 
     const updateSet = (index, field, value) => {
         const newSets = [...sets];
         newSets[index][field] = value;
         setSets(newSets);
+        validateScore(newSets);
+    };
+
+    const toggleTieBreak = (index) => {
+        const newSets = [...sets];
+        newSets[index].isTieBreak = !newSets[index].isTieBreak;
+        setSets(newSets);
+        validateScore(newSets);
     };
 
     const onDateChange = (event, selectedDate) => {
@@ -298,7 +355,16 @@ export default function NewMatchScreen({ navigation }) {
 
                     {sets.map((set, index) => (
                         <View key={index} style={styles.setRow}>
-                            <Text style={styles.setLabel}>SET {index + 1}</Text>
+                            <View style={styles.setLabelContainer}>
+                                <Text style={styles.setLabel}>SET {index + 1}</Text>
+                                <TouchableOpacity
+                                    style={[styles.tbToggle, set.isTieBreak && styles.tbActive]}
+                                    onPress={() => toggleTieBreak(index)}
+                                >
+                                    <Text style={[styles.tbText, set.isTieBreak && styles.tbTextActive]}>TB</Text>
+                                </TouchableOpacity>
+                            </View>
+
                             <View style={styles.setInputs}>
                                 <TextInput
                                     style={styles.scoreInput}
@@ -320,6 +386,14 @@ export default function NewMatchScreen({ navigation }) {
                             </View>
                         </View>
                     ))}
+
+                    {/* Warning Message */}
+                    {scoreWarning ? (
+                        <View style={styles.warningContainer}>
+                            <Ionicons name="alert-circle" size={16} color="#ffa500" />
+                            <Text style={styles.warningText}>{scoreWarning}</Text>
+                        </View>
+                    ) : null}
 
                     <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
                         <Text style={styles.addSetText}>+ Add Set</Text>
@@ -442,11 +516,36 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
     },
+    setLabelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: 80, // Increased to fit TB toggle
+    },
     setLabel: {
         color: '#666',
         fontSize: 12,
         fontWeight: 'bold',
-        width: 40,
+        marginRight: 6,
+    },
+    tbToggle: {
+        backgroundColor: '#2c2c2e',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: '#444',
+    },
+    tbActive: {
+        backgroundColor: '#ccff00',
+        borderColor: '#ccff00',
+    },
+    tbText: {
+        color: '#666',
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    tbTextActive: {
+        color: '#000',
     },
     setInputs: {
         flex: 1,
@@ -567,5 +666,21 @@ const styles = StyleSheet.create({
         color: '#555',
         textAlign: 'center',
         marginTop: 20
+    },
+    warningContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 165, 0, 0.1)', // Light orange background
+        padding: 10,
+        borderRadius: 8,
+        marginTop: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 165, 0, 0.3)',
+    },
+    warningText: {
+        color: '#ffa500', // Orange text
+        fontSize: 12,
+        marginLeft: 8,
+        fontWeight: '600',
     }
 });

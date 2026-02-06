@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { db } from '../../firebaseConfig';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getOrCreateUser } from '../services/userService';
@@ -144,21 +145,24 @@ export default function EntityDetailScreen({ route, navigation }) {
     };
 
     // Helper for rendering inputs
-    const renderField = (label, value, setter, placeholder, multiline = false) => (
+    const renderField = (label, value, setter, placeholder, iconName, multiline = false) => (
         <View style={styles.inputGroup}>
             <Text style={styles.label}>{label}</Text>
-            {editMode ? (
-                <TextInput
-                    style={[styles.input, multiline && { height: 60 }]}
-                    value={value}
-                    onChangeText={setter}
-                    placeholder={placeholder}
-                    placeholderTextColor="#555"
-                    multiline={multiline}
-                />
-            ) : (
-                <Text style={styles.value}>{value || '-'}</Text>
-            )}
+            <View style={styles.inputContainer}>
+                {iconName && <Ionicons name={iconName} size={18} color="#666" style={{ marginRight: 10 }} />}
+                {editMode ? (
+                    <TextInput
+                        style={[styles.input, multiline && { height: 60 }]}
+                        value={value}
+                        onChangeText={setter}
+                        placeholder={placeholder}
+                        placeholderTextColor="#555"
+                        multiline={multiline}
+                    />
+                ) : (
+                    <Text style={styles.value}>{value || '-'}</Text>
+                )}
+            </View>
         </View>
     );
 
@@ -195,12 +199,12 @@ export default function EntityDetailScreen({ route, navigation }) {
                 {/* HEADLINE SECTION */}
                 <View style={styles.section}>
                     <Text style={styles.sectionHeader}>IDENTITY</Text>
-                    {renderField(type === 'player' ? 'NICKNAME' : 'VENUE NAME', name, setName, isNew ? "e.g. 'Mario T.'" : "Name")}
+                    {renderField(type === 'player' ? 'NICKNAME' : 'VENUE NAME', name, setName, isNew ? "e.g. 'Mario T.'" : "Name", type === 'player' ? 'person' : 'business')}
 
                     {type === 'player' && (
                         <>
-                            {renderField('FIRST NAME', firstName, setFirstName, "Mario")}
-                            {renderField('LAST NAME', lastName, setLastName, "Rossi")}
+                            {renderField('FIRST NAME', firstName, setFirstName, "Mario", "person-outline")}
+                            {renderField('LAST NAME', lastName, setLastName, "Rossi", "person-outline")}
                         </>
                     )}
                 </View>
@@ -208,21 +212,21 @@ export default function EntityDetailScreen({ route, navigation }) {
                 {/* CONTACT SECTION */}
                 <View style={styles.section}>
                     <Text style={styles.sectionHeader}>CONTACT</Text>
-                    {renderField('PHONE', phone, setPhone, "+39 ...")}
-                    {type === 'player' && renderField('EMAIL', email, setEmail, "user@example.com")}
-                    {type === 'venue' && renderField('WEBSITE', website, setWebsite, "www.tennisclub.it")}
+                    {renderField('PHONE', phone, setPhone, "+39 ...", "call-outline")}
+                    {type === 'player' && renderField('EMAIL', email, setEmail, "user@example.com", "mail-outline")}
+                    {type === 'venue' && renderField('WEBSITE', website, setWebsite, "www.tennisclub.it", "globe-outline")}
                 </View>
 
                 {/* INFO SECTION */}
                 <View style={styles.section}>
                     <Text style={styles.sectionHeader}>INFO</Text>
                     {type === 'player' ? (
-                        renderField('CITY', city, setCity, "Milan")
+                        renderField('CITY', city, setCity, "Milan", "location-outline")
                         // Level removed as requested
                     ) : (
                         <>
-                            {renderField('ADDRESS', address, setAddress, "Street, City", true)}
-                            {renderField('SURFACE', surface, setSurface, "Clay, Hard, Grass")}
+                            {renderField('ADDRESS', address, setAddress, "Street, City", "location-outline", true)}
+                            {renderField('SURFACE', surface, setSurface, "Clay, Hard, Grass", "layers-outline")}
                         </>
                     )}
                 </View>
@@ -296,12 +300,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
     },
-    input: {
-        color: '#fff',
-        fontSize: 16,
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         borderBottomWidth: 1,
         borderBottomColor: '#333',
         paddingVertical: 8,
+    },
+    input: {
+        flex: 1,
+        color: '#fff',
+        fontSize: 16,
     },
 
     saveBtn: {
