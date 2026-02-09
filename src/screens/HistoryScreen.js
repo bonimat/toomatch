@@ -1,18 +1,45 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, SectionList, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { getAllMatches } from '../services/matchService';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HistoryScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [matches, setMatches] = useState([]);
+    const [sections, setSections] = useState([]);
+    const navigation = useNavigation();
 
     const loadMatches = async () => {
         const data = await getAllMatches();
-        setMatches(data);
+
+        // Group by Month YYYY
+        const grouped = data.reduce((acc, match) => {
+            const d = new Date(match.date);
+            const monthYear = d.toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase();
+
+            if (!acc[monthYear]) {
+                acc[monthYear] = [];
+            }
+            acc[monthYear].push(match);
+            return acc;
+        }, {});
+
+        // Convert to SectionList format AND SORT
+        const sectionsArray = Object.keys(grouped)
+            .map(key => ({
+                title: key,
+                data: grouped[key]
+            }))
+            .sort((a, b) => {
+                // Parse "MONTH YYYY" back to date for sorting
+                const dateA = new Date(a.data[0].date);
+                const dateB = new Date(b.data[0].date);
+                return dateB - dateA; // Descending order
+            });
+
+        setSections(sectionsArray);
         setLoading(false);
         setRefreshing(false);
     };
@@ -28,33 +55,71 @@ export default function HistoryScreen() {
         loadMatches();
     }, []);
 
+    const handleLongPress = (match) => {
+        Alert.alert(
+            "Match Options",
+            "Choose an action",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Edit Match",
+                    onPress: () => navigation.navigate("NewMatch", { match: match })
+                },
+                {
+                    text: "Delete Match",
+                    style: "destructive",
+                    onPress: () => console.log("Delete TODO") // Implement delete later if needed
+                }
+            ]
+        );
+    };
+
+    const renderSectionHeader = ({ section: { title } }) => (
+        <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            <View style={styles.sectionLine} />
+        </View>
+    );
+
     const renderMatchItem = ({ item }) => {
         // Extract date data
         const d = new Date(item.date);
         const day = d.getDate();
-        const month = d.toLocaleString('default', { month: 'short' }).toUpperCase();
+        const weekday = d.toLocaleString('default', { weekday: 'short' }).toUpperCase();
 
         // Format Score (e.g. "6-4 6-2")
         const scoreString = item.sets.map(s => `${s.s1}-${s.s2}`).join(', ');
 
         return (
-            <View style={styles.matchCard}>
-                <View style={[styles.indicator, item.userWon ? styles.winIndicator : styles.lossIndicator]} />
-                <View style={styles.matchDate}>
-                    <Text style={styles.day}>{day}</Text>
-                    <Text style={styles.month}>{month}</Text>
+            <TouchableOpacity
+                activeOpacity={0.8}
+                onLongPress={() => handleLongPress(item)}
+            >
+                <View style={styles.matchCard}>
+                    <View style={[styles.indicator, item.userWon ? styles.winIndicator : styles.lossIndicator]} />
+
+                    <View style={styles.matchDate}>
+                        <Text style={styles.day}>{day}</Text>
+                        <Text style={styles.month}>{weekday}</Text>
+                    </View>
+
+                    <View style={styles.matchInfo}>
+                        <Text style={styles.opponent}>vs {item.player2}</Text>
+                        <Text style={styles.location}>{item.location || "Unknown Court"}</Text>
+                    </View>
+
+                    <View style={styles.costBadge}>
+                        <Text style={styles.costText}>€{item.totalCost || "0"}</Text>
+                    </View>
+
+                    <View style={styles.matchScore}>
+                        <Text style={styles.scoreText}>{scoreString}</Text>
+                        <Text style={[styles.outcomeText, item.userWon ? styles.textWin : styles.textLoss]}>
+                            {item.userWon ? 'WIN' : 'LOSS'}
+                        </Text>
+                    </View>
                 </View>
-                <View style={styles.matchInfo}>
-                    <Text style={styles.opponent}>vs {item.player2}</Text>
-                    <Text style={styles.location}>{item.location || "Unknown Court"}</Text>
-                </View>
-                <View style={styles.matchScore}>
-                    <Text style={styles.scoreText}>{scoreString}</Text>
-                    <Text style={[styles.outcomeText, item.userWon ? styles.textWin : styles.textLoss]}>
-                        {item.userWon ? 'WIN' : 'LOSS'}
-                    </Text>
-                </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -74,9 +139,10 @@ export default function HistoryScreen() {
                 <Text style={styles.headerTitle}>MATCH HISTORY</Text>
             </View>
 
-            <FlatList
-                data={matches}
+            <SectionList
+                sections={sections}
                 renderItem={renderMatchItem}
+                renderSectionHeader={renderSectionHeader}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
@@ -88,6 +154,7 @@ export default function HistoryScreen() {
                         <Text style={styles.emptyText}>No matches recorded yet.</Text>
                     </View>
                 }
+                stickySectionHeadersEnabled={false}
             />
         </View>
     );
@@ -121,6 +188,24 @@ const styles = StyleSheet.create({
     listContent: {
         padding: 20,
         paddingBottom: 40,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+        marginTop: 10,
+    },
+    sectionTitle: {
+        color: '#666',
+        fontSize: 12,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        marginRight: 15,
+    },
+    sectionLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#222',
     },
     matchCard: {
         backgroundColor: '#111',
@@ -184,6 +269,19 @@ const styles = StyleSheet.create({
     },
     textWin: { color: '#4cd964', backgroundColor: 'rgba(76, 217, 100, 0.1)' },
     textLoss: { color: '#ff3b30', backgroundColor: 'rgba(255, 59, 48, 0.1)' },
+
+    costBadge: {
+        backgroundColor: '#222',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 4,
+        marginRight: 10,
+    },
+    costText: {
+        color: '#ccff00',
+        fontSize: 10,
+        fontWeight: '700',
+    },
 
     emptyContainer: {
         alignItems: 'center',

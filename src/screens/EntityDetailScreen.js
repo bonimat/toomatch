@@ -30,6 +30,13 @@ export default function EntityDetailScreen({ route, navigation }) {
     const [address, setAddress] = useState('');
     const [website, setWebsite] = useState('');
     const [surface, setSurface] = useState('');
+    // Expenses
+    const [pricePerHour, setPricePerHour] = useState('');
+    const [guestPrice, setGuestPrice] = useState(''); // NEW
+    const [lightPrice, setLightPrice] = useState('');
+    const [heatingPrice, setHeatingPrice] = useState('');
+    // Default
+    const [isDefault, setIsDefault] = useState(false);
 
     useEffect(() => {
         if (!isNew && id) {
@@ -56,7 +63,16 @@ export default function EntityDetailScreen({ route, navigation }) {
                     setAddress(data.address || '');
                     setWebsite(data.website || '');
                     setSurface(data.surface || '');
+                    setSurface(data.surface || '');
+                    setPricePerHour(data.pricePerHour ? String(data.pricePerHour) : '');
+                    setGuestPrice(data.guestPricePerHour ? String(data.guestPricePerHour) : ''); // NEW
+                    setLightPrice(data.lightPricePerHour ? String(data.lightPricePerHour) : '');
+                    setHeatingPrice(data.heatingPricePerHour ? String(data.heatingPricePerHour) : '');
+                    setLightPrice(data.lightPricePerHour ? String(data.lightPricePerHour) : '');
+                    setHeatingPrice(data.heatingPricePerHour ? String(data.heatingPricePerHour) : '');
                 }
+                // Common
+                setIsDefault(data.isDefault || false);
             } else {
                 Alert.alert("Error", "Item not found");
                 navigation.goBack();
@@ -92,8 +108,20 @@ export default function EntityDetailScreen({ route, navigation }) {
                     phoneNumber: phone,
                     address: address,
                     website: website,
-                    surface: surface
+                    surface: surface,
+                    pricePerHour: parseFloat(pricePerHour) || 0,
+                    guestPricePerHour: parseFloat(guestPrice) || 0, // NEW
+                    lightPricePerHour: parseFloat(lightPrice) || 0,
+                    heatingPricePerHour: parseFloat(heatingPrice) || 0
                 };
+            }
+
+            // Common fields
+            updatePayload.isDefault = isDefault;
+
+            // Handle Default Logic (reset others if this is default)
+            if (isDefault) {
+                // Future: Unset others
             }
 
             // 1. CREATE Logic
@@ -231,6 +259,35 @@ export default function EntityDetailScreen({ route, navigation }) {
                     )}
                 </View>
 
+                {/* DEFAULT TOGGLE */}
+                <View style={styles.section}>
+                    <View style={styles.switchRow}>
+                        <View>
+                            <Text style={styles.switchLabel}>SET AS DEFAULT</Text>
+                            <Text style={styles.switchSub}>Use this as pre-selected option</Text>
+                        </View>
+                        {editMode ? (
+                            <TouchableOpacity onPress={() => setIsDefault(!isDefault)}>
+                                <Ionicons name={isDefault ? "toggle" : "toggle-outline"} size={32} color={isDefault ? "#ccff00" : "#666"} />
+                            </TouchableOpacity>
+                        ) : (
+                            isDefault && <Ionicons name="checkmark-circle" size={24} color="#ccff00" />
+                        )}
+                    </View>
+                </View>
+
+                {/* RATES SECTION (VENUES ONLY) */}
+                {type === 'venue' && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionHeader}>RATES (€/h)</Text>
+                        <Text style={styles.helperText}>Cost per hour for booking, light, and heating.</Text>
+                        {renderField('MEMBER PRICE', pricePerHour, setPricePerHour, "0.00", "person-outline")}
+                        {renderField('NON-MEMBER PRICE', guestPrice, setGuestPrice, "0.00", "people-outline")}
+                        {renderField('LIGHTING', lightPrice, setLightPrice, "0.00", "bulb-outline")}
+                        {renderField('HEATING', heatingPrice, setHeatingPrice, "0.00", "flame-outline")}
+                    </View>
+                )}
+
                 {/* SAVE BUTTON */}
                 {editMode && (
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
@@ -287,6 +344,13 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         textTransform: 'uppercase',
     },
+    helperText: {
+        color: '#666',
+        fontSize: 12,
+        fontStyle: 'italic',
+        marginTop: -10,
+        marginBottom: 15,
+    },
     inputGroup: {
         marginBottom: 15,
     },
@@ -328,5 +392,21 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
     },
-    deleteBtnText: { color: '#ff3b30', fontSize: 14, fontWeight: '700' }
+    deleteBtnText: { color: '#ff3b30', fontSize: 14, fontWeight: '700' },
+
+    switchRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    switchLabel: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    switchSub: {
+        color: '#666',
+        fontSize: 11,
+        marginTop: 2,
+    }
 });

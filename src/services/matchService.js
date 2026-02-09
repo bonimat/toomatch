@@ -1,5 +1,5 @@
 import { db } from "../../firebaseConfig";
-import { collection, addDoc, Timestamp, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, Timestamp, getDocs, query, orderBy, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { getOrCreateUser } from "./userService";
 import { getOrCreateVenue } from "./venueService";
@@ -62,7 +62,15 @@ export async function createMatch(matchData) {
             })),
             notes: matchData.notes || "",
             createdAt: Timestamp.now(),
-            userWon: didUserWin(matchData.sets)
+            userWon: didUserWin(matchData.sets),
+
+            // Expenses (FIX: Ensure these are saved on creation too)
+            duration: matchData.duration || 0,
+            useLights: matchData.useLights || false,
+            useHeating: matchData.useHeating || false,
+            isGuest: matchData.isGuest || false,
+            totalCost: matchData.totalCost || 0,
+            venueId: matchData.venueId || null
         };
 
         // Timeout promise to prevent infinite hanging
@@ -81,6 +89,65 @@ export async function createMatch(matchData) {
 
     } catch (e) {
         console.error("Error creating match:", e);
+        throw e;
+    }
+}
+
+export async function updateMatch(matchId, matchData) {
+    try {
+        console.log("Updating match...", matchId);
+
+        // 1. Get/Create Entities (in case names changed)
+        const player1Doc = await getOrCreateUser(matchData.player1 || "Me");
+        const player2Doc = await getOrCreateUser(matchData.player2 || "Opponent");
+        const venueDoc = await getOrCreateVenue(matchData.location);
+
+        const payload = {
+            // Relational Objects
+            player1: {
+                uuid: player1Doc?.uuid,
+                nickname: player1Doc?.nickname,
+            },
+            player2: {
+                uuid: player2Doc?.uuid,
+                nickname: player2Doc?.nickname,
+            },
+            venue: venueDoc ? {
+                uuid: venueDoc.uuid,
+                name: venueDoc.name,
+            } : null,
+
+            // Legacy/Display fields
+            player1_name: matchData.player1,
+            player2_name: matchData.player2,
+            location_name: matchData.location,
+
+            date: matchData.date || new Date().toISOString(),
+            sets: matchData.sets.map(s => ({
+                s1: parseInt(s.s1) || 0,
+                s2: parseInt(s.s2) || 0
+            })),
+            notes: matchData.notes || "",
+            // Use existing createdAt or update updatedAt? Firestore usually keeps createdAt.
+            // Let's add updatedAt
+            updatedAt: Timestamp.now(),
+            userWon: didUserWin(matchData.sets),
+
+            // Expenses
+            duration: matchData.duration,
+            useLights: matchData.useLights,
+            useHeating: matchData.useHeating,
+            isGuest: matchData.isGuest,
+            totalCost: matchData.totalCost,
+            venueId: matchData.venueId
+        };
+
+        await updateDoc(doc(db, "matches", matchId), payload);
+        console.log("Match updated:", matchId);
+        return matchId;
+
+    } catch (e) {
+        console.error("Error updating match:", e);
         throw e;
     }
 }
@@ -166,6 +233,10 @@ export async function getDetailedStats() {
         const losses = total - wins;
         const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
 
+        // Economy Stats
+        const totalSpent = matches.reduce((sum, m) => sum + (parseFloat(m.totalCost) || 0), 0);
+        const avgCost = total > 0 ? (totalSpent / total).toFixed(2) : "0.00";
+
         // Streak
         let streak = 0;
         let isWinStreak = false;
@@ -202,8 +273,12 @@ export async function getDetailedStats() {
             winRate,
             streak,
             isWinStreak,
+            isWinStreak,
             recentHistory: matches.map(m => m.userWon ? 'W' : 'L').slice(0, 5).reverse(), // Trend for chart/display
-            rivals: sortedRivals
+            rivals: sortedRivals,
+            // Economy
+            totalSpent: totalSpent.toFixed(2),
+            avgCost: avgCost
         };
 
     } catch (e) {
@@ -221,7 +296,7 @@ export async function getAllMatches() {
         );
 
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => {
+        const matches = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -230,6 +305,23 @@ export async function getAllMatches() {
                 player2: data.player2?.nickname || data.player2 || "Unknown",
                 location: data.venue?.name || data.location || "",
             };
+        });
+
+        // Secondary Sort: Creation Time DESC (Newest created first for same date)
+        return matches.sort((a, b) => {
+            const dateA = a.date;
+            const dateB = b.date;
+            // Primary sort by date string (if not already handled by query, but query uses proper date type?) 
+            // Query uses "date" string field. So string comparison is correct.
+            if (dateA !== dateB) return dateB.localeCompare(dateA);
+
+            // Secondary: Wins First
+            if (a.userWon !== b.userWon) return a.userWon ? -1 : 1;
+
+            // Tertiary: CreatedAt
+            const tA = a.createdAt?.seconds || 0;
+            const tB = b.createdAt?.seconds || 0;
+            return tB - tA;
         });
     } catch (e) {
         console.error("Error fetching all matches:", e);
@@ -263,6 +355,24 @@ export async function seedMatches() {
         return true;
     } catch (e) {
         console.error("Error seeding:", e);
+        return false;
+    }
+}
+// DELETE ALL matches (for testing/reset)
+export async function deleteAllMatches() {
+    try {
+        console.log("Deleting ALL matches...");
+        const snapshot = await getDocs(collection(db, "matches"));
+
+        const deletePromises = snapshot.docs.map(doc =>
+            deleteDoc(doc.ref)
+        );
+
+        await Promise.all(deletePromises);
+        console.log(`Deleted ${deletePromises.length} matches.`);
+        return true;
+    } catch (e) {
+        console.error("Error deleting all matches:", e);
         return false;
     }
 }

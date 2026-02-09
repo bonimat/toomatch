@@ -98,6 +98,21 @@ export default function StatsScreen() {
                     </View>
                 </View>
 
+                {/* ECONOMY */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>ECONOMY</Text>
+                    <View style={styles.row}>
+                        <View style={styles.smallCard}>
+                            <Text style={[styles.smallCardValue, { color: '#ccff00' }]}>€{stats?.totalSpent || "0.00"}</Text>
+                            <Text style={styles.smallCardLabel}>TOTAL SPENT</Text>
+                        </View>
+                        <View style={styles.smallCard}>
+                            <Text style={styles.smallCardValue}>€{stats?.avgCost || "0.00"}</Text>
+                            <Text style={styles.smallCardLabel}>AVG / MATCH</Text>
+                        </View>
+                    </View>
+                </View>
+
                 {/* RIVALS */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeaderRow}>

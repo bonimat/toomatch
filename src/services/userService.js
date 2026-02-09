@@ -1,5 +1,5 @@
 import { db } from "../../firebaseConfig";
-import { collection, addDoc, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, deleteDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 
 const USERS_COLLECTION = "users";
@@ -70,5 +70,41 @@ export async function getAllUsers() {
     } catch (e) {
         console.error(e);
         return [];
+    }
+}
+
+/**
+ * Get the default opponent (if any)
+ */
+export async function getDefaultOpponent() {
+    try {
+        const q = query(collection(db, USERS_COLLECTION), where("isDefault", "==", true));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            return { id: doc.id, ...doc.data() };
+        }
+        return null;
+    } catch (e) {
+        console.error("Error getting default opponent:", e);
+        return null;
+    }
+}
+// DELETE ALL users (for testing/reset)
+export async function deleteAllUsers() {
+    try {
+        console.log("Deleting ALL users...");
+        const snapshot = await getDocs(collection(db, USERS_COLLECTION));
+
+        const deletePromises = snapshot.docs.map(doc =>
+            deleteDoc(doc.ref)
+        );
+
+        await Promise.all(deletePromises);
+        console.log(`Deleted ${deletePromises.length} users.`);
+        return true;
+    } catch (e) {
+        console.error("Error deleting all users:", e);
+        return false;
     }
 }

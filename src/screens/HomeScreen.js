@@ -4,7 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getDashboardStats } from '../services/matchService';
+import { getDashboardStats, deleteAllMatches } from '../services/matchService';
+import { deleteAllVenues } from '../services/venueService';
+import { deleteAllUsers } from '../services/userService';
 
 const { width } = Dimensions.get('window');
 
@@ -40,14 +42,20 @@ const HomeScreen = ({ navigation }) => {
 
     const handleLogout = async () => {
         Alert.alert(
-            "Logout",
-            "Are you sure you want to exit?",
+            "Reset App",
+            "Logout will DELETE ALL MATCH DATA to reset for testing. Are you sure?",
             [
                 { text: "Cancel", style: "cancel" },
                 {
-                    text: "Logout",
+                    text: "Delete & Logout",
                     style: "destructive",
                     onPress: async () => {
+                        setLoading(true);
+                        await Promise.all([
+                            deleteAllMatches(),
+                            deleteAllVenues(),
+                            deleteAllUsers()
+                        ]);
                         await AsyncStorage.clear();
                         navigation.replace('Splash'); // Reboot app flow
                     }
@@ -90,6 +98,11 @@ const HomeScreen = ({ navigation }) => {
                     <Text style={styles.opponent}>vs {match.player2}</Text>
                     <Text style={styles.location}>{match.location || "Unknown Court"}</Text>
                 </View>
+                {match.totalCost > 0 && (
+                    <View style={styles.costBadge}>
+                        <Text style={styles.costText}>€{match.totalCost}</Text>
+                    </View>
+                )}
                 <View style={styles.matchScore}>
                     <Text style={styles.scoreText}>{scoreString}</Text>
                     <Text style={[styles.outcomeText, match.userWon ? styles.textWin : styles.textLoss]}>
@@ -377,6 +390,20 @@ const styles = StyleSheet.create({
     },
     textWin: { color: '#4cd964', backgroundColor: 'rgba(76, 217, 100, 0.1)' },
     textLoss: { color: '#ff3b30', backgroundColor: 'rgba(255, 59, 48, 0.1)' },
+
+    costBadge: {
+        backgroundColor: '#222',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 4,
+        marginRight: 10,
+    },
+    costText: {
+        color: '#ccff00',
+        fontSize: 10,
+        fontWeight: '700',
+    },
+
     emptyText: {
         color: '#555',
         textAlign: 'center',

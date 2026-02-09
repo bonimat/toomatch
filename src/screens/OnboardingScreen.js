@@ -11,7 +11,20 @@ export default function OnboardingScreen({ navigation }) {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [nickname, setNickname] = useState('');
+    const [isNicknameManuallyEdited, setIsNicknameManuallyEdited] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const handleFirstNameChange = (text) => {
+        setFirstName(text);
+        if (!isNicknameManuallyEdited) {
+            setNickname(text);
+        }
+    };
+
+    const handleNicknameChange = (text) => {
+        setNickname(text);
+        setIsNicknameManuallyEdited(true);
+    };
 
     const handleStart = async () => {
         if (!firstName.trim() || !lastName.trim() || !nickname.trim()) {
@@ -74,7 +87,7 @@ export default function OnboardingScreen({ navigation }) {
                             placeholder="Jannik"
                             placeholderTextColor="#555"
                             value={firstName}
-                            onChangeText={setFirstName}
+                            onChangeText={handleFirstNameChange}
                         />
                     </View>
 
@@ -97,7 +110,7 @@ export default function OnboardingScreen({ navigation }) {
                             placeholder="TheFox"
                             placeholderTextColor="#555"
                             value={nickname}
-                            onChangeText={setNickname}
+                            onChangeText={handleNicknameChange}
                             autoCapitalize="none"
                         />
                     </View>

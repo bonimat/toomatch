@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 import { db } from '../../firebaseConfig';
@@ -14,6 +15,7 @@ export default function DirectoryScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState([]);
     const [seeding, setSeeding] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState(null);
 
     useFocusEffect(
         useCallback(() => {
@@ -31,6 +33,13 @@ export default function DirectoryScreen({ navigation }) {
     const fetchData = async () => {
         setLoading(true);
         try {
+            // Get Current User ID for highlighting
+            const session = await AsyncStorage.getItem('user_session');
+            if (session) {
+                const user = JSON.parse(session);
+                setCurrentUserId(user.firestoreId);
+            }
+
             const collectionName = activeTab === 'players' ? 'users' : 'venues';
             const sortField = activeTab === 'players' ? 'nickname' : 'name';
 
@@ -57,7 +66,7 @@ export default function DirectoryScreen({ navigation }) {
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate('EntityDetail', { type: activeTab === 'players' ? 'player' : 'venue', id: item.id })}
             >
-                <View style={styles.card}>
+                <View style={[styles.card, item.id === currentUserId && activeTab === 'players' && styles.currentUserCard]}>
                     {activeTab === 'players' ? (
                         <>
                             <View style={styles.avatarPlaceholder}>
@@ -100,7 +109,7 @@ export default function DirectoryScreen({ navigation }) {
                     style={styles.addButton}
                     onPress={() => navigation.navigate('EntityDetail', { type: activeTab === 'players' ? 'player' : 'venue', id: null })}
                 >
-                    <Ionicons name="add" size={24} color="black" />
+                    <Ionicons name="add" size={24} color="white" />
                 </TouchableOpacity>
             </View>
 
@@ -206,6 +215,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#1c1c1e',
         borderRadius: 12,
         marginBottom: 10,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    currentUserCard: {
+        borderColor: '#ccff00',
+        backgroundColor: 'rgba(204, 255, 0, 0.05)',
     },
     avatarPlaceholder: {
         width: 40,

@@ -9,11 +9,12 @@ import {
     Platform,
     Alert,
     Modal,
-    FlatList
+    FlatList,
+    KeyboardAvoidingView // Added
 } from "react-native";
-import { createMatch } from "../services/matchService";
-import { getAllUsers } from "../services/userService";
-import { getAllVenues } from "../services/venueService";
+import { createMatch, updateMatch } from "../services/matchService"; // Import updateMatch
+import { getAllVenues, getDefaultVenue } from "../services/venueService";
+import { getAllUsers, getDefaultOpponent } from "../services/userService";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 
@@ -21,16 +22,26 @@ import { Ionicons } from '@expo/vector-icons';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-export default function NewMatchScreen({ navigation }) {
+export default function NewMatchScreen({ navigation, route }) { // Add route
     const [player1, setPlayer1] = useState("Me");
     const [player2, setPlayer2] = useState("");
     const [date, setDate] = useState(new Date()); // Store as Date object internally
     const [location, setLocation] = useState("");
     const [sets, setSets] = useState([{ s1: "", s2: "" }]);
     const [notes, setNotes] = useState("");
+    // Expenses
+    const [duration, setDuration] = useState("1.5");
+    const [useLights, setUseLights] = useState(false);
+    const [useHeating, setUseHeating] = useState(false);
+    const [isGuest, setIsGuest] = useState(false); // NEW
+    const [totalCost, setTotalCost] = useState("0");
+    const [selectedVenue, setSelectedVenue] = useState(null); // Full object
     const [saving, setSaving] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [scoreWarning, setScoreWarning] = useState("");
+    const [matchId, setMatchId] = useState(null); // For Editing
+
+    const isEditing = !!matchId;
 
     // Picker State
     const [modalVisible, setModalVisible] = useState(false);
@@ -50,15 +61,60 @@ export default function NewMatchScreen({ navigation }) {
         };
         loadSession();
 
-        // 2. Pre-fetch players and venues
+        // 2. Pre-fetch players and venues AND Defaults OR Edit Data
         const loadData = async () => {
             const users = await getAllUsers();
             setAllPlayers(users);
             const venues = await getAllVenues();
             setAllVenues(venues);
+
+            // CHECK FOR EDIT MODE
+            if (route.params?.match) {
+                const m = route.params.match;
+                setMatchId(m.id);
+                setPlayer1(m.player1_name || m.player1?.nickname || m.player1);
+                setPlayer2(m.player2_name || m.player2?.nickname || m.player2);
+                setLocation(m.location_name || m.location);
+                setSets(m.sets || [{ s1: "", s2: "" }]);
+                setNotes(m.notes || "");
+                setDate(new Date(m.date)); // Date object
+
+                // Expenses
+                setDuration(String(m.duration || "1.5"));
+                setUseLights(!!m.useLights);
+                setUseHeating(!!m.useHeating);
+                setIsGuest(!!m.isGuest);
+                setTotalCost(String(m.totalCost || "0"));
+
+                // Try to find venue object to match location name
+                const v = venues.find(v => v.name === (m.location_name || m.location));
+                if (v) setSelectedVenue(v);
+
+                navigation.setOptions({ title: 'Edit Match' }); // Update header if possible
+
+            } else {
+                // NEW MATCH DEFAULTS
+                const defaultOpponent = await getDefaultOpponent();
+                if (defaultOpponent) {
+                    setPlayer2(defaultOpponent.nickname);
+                }
+
+                const defaultVenue = await getDefaultVenue();
+                if (defaultVenue) {
+                    setLocation(defaultVenue.name);
+                    setSelectedVenue(defaultVenue);
+
+                    let rate = (isGuest && defaultVenue.guestPricePerHour) ? defaultVenue.guestPricePerHour : (defaultVenue.pricePerHour || 0);
+                    if (useLights) rate += (defaultVenue.lightPricePerHour || 0);
+                    if (useHeating) rate += (defaultVenue.heatingPricePerHour || 0);
+
+                    const dur = parseFloat(duration) || 0;
+                    setTotalCost((rate * dur).toFixed(2));
+                }
+            }
         };
         loadData();
-    }, []);
+    }, [route.params?.match]);
 
     // Helper: Simple Validation for Tennis Rules
     const validateScore = (currentSets) => {
@@ -117,8 +173,49 @@ export default function NewMatchScreen({ navigation }) {
     const selectItem = (item) => {
         if (targetField === 'player1') setPlayer1(item.nickname);
         if (targetField === 'player2') setPlayer2(item.nickname);
-        if (targetField === 'location') setLocation(item.name);
+        if (targetField === 'location') {
+            setLocation(item.name);
+            setSelectedVenue(item);
+            // Auto-calc if changing venue
+            calculateCost(duration, useLights, useHeating, isGuest, item);
+        }
         setModalVisible(false);
+    };
+
+    // Calculate Cost Helper
+    const calculateCost = (dur, lights, heating, guest, venue) => {
+        if (!venue || !venue.pricePerHour) return;
+
+        const hours = parseFloat(dur) || 0;
+        // Choose rate based on Guest status
+        let rate = (guest && venue.guestPricePerHour) ? venue.guestPricePerHour : (venue.pricePerHour || 0);
+
+        if (lights) rate += (venue.lightPricePerHour || 0);
+        if (heating) rate += (venue.heatingPricePerHour || 0);
+
+        const total = (rate * hours).toFixed(2);
+        setTotalCost(total);
+    };
+
+    // Handlers for expense changes
+    const handleDurationChange = (val) => {
+        setDuration(val);
+        calculateCost(val, useLights, useHeating, isGuest, selectedVenue);
+    };
+    const toggleLights = () => {
+        const newVal = !useLights;
+        setUseLights(newVal);
+        calculateCost(duration, newVal, useHeating, isGuest, selectedVenue);
+    };
+    const toggleHeating = () => {
+        const newVal = !useHeating;
+        setUseHeating(newVal);
+        calculateCost(duration, useLights, newVal, isGuest, selectedVenue);
+    };
+    const toggleGuest = () => {
+        const newVal = !isGuest;
+        setIsGuest(newVal);
+        calculateCost(duration, useLights, useHeating, newVal, selectedVenue);
     };
 
     const addSet = () => {
@@ -143,6 +240,7 @@ export default function NewMatchScreen({ navigation }) {
         const currentDate = selectedDate || date;
         setShowDatePicker(Platform.OS === 'ios');
         setDate(currentDate);
+        // Add minimal delay to ensure close on Android
         if (Platform.OS !== 'ios') {
             setShowDatePicker(false);
         }
@@ -150,9 +248,14 @@ export default function NewMatchScreen({ navigation }) {
 
     const formatDate = (dateObj) => {
         if (!dateObj) return "";
-        // Handle if date is string (legacy) or Date object
         const d = new Date(dateObj);
-        return d.toISOString().split('T')[0];
+        // FORCE LOCAL DATE TO STRING "YYYY-MM-DD"
+        // toISOString() uses UTC, which might be yesterday if we are ahead of UTC.
+        // We want the date selected by the user in their timezone.
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
     const handleSave = async () => {
@@ -163,14 +266,28 @@ export default function NewMatchScreen({ navigation }) {
 
         setSaving(true);
         try {
-            await createMatch({
+            const payload = {
                 player1,
                 player2,
-                date: formatDate(date),
+                date: formatDate(date), // Ensure this returns YYYY-MM-DD
                 location,
                 sets,
-                notes
-            });
+                notes,
+                // Expenses
+                duration: parseFloat(duration) || 0,
+                useLights,
+                useHeating,
+                isGuest: isGuest,
+                totalCost: parseFloat(totalCost) || 0,
+                venueId: selectedVenue ? selectedVenue.id : null
+            };
+
+            if (isEditing) {
+                await updateMatch(matchId, payload);
+            } else {
+                await createMatch(payload);
+            }
+
             setSaving(false);
             navigation.goBack();
         } catch (error) {
@@ -194,7 +311,7 @@ export default function NewMatchScreen({ navigation }) {
                     onPress={() => selectItem(item)}
                 >
                     <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarText}>📍</Text>
+                        <Ionicons name="location" size={20} color="#ccff00" />
                     </View>
                     <View>
                         <Text style={styles.itemNickname}>{item.name}</Text>
@@ -232,7 +349,7 @@ export default function NewMatchScreen({ navigation }) {
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text style={styles.cancelBtn}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>New Match</Text>
+                <Text style={styles.headerTitle}>{isEditing ? "Edit Match" : "New Match"}</Text>
                 <TouchableOpacity onPress={handleSave} disabled={saving}>
                     <Text style={[styles.saveHeaderBtn, saving && { opacity: 0.5 }]}>
                         {saving ? "Saving..." : "Save"}
@@ -267,160 +384,226 @@ export default function NewMatchScreen({ navigation }) {
                 </View>
             </Modal>
 
-            <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+            >
+                <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
 
-                {/* Players */}
-                <Text style={styles.sectionLabel}>PLAYERS</Text>
-                <View style={styles.formGroup}>
-                    <View style={styles.inputRow}>
-                        <Text style={styles.label}>Player</Text>
-                        <TextInput
-                            style={[styles.input, { fontWeight: '600' }]}
-                            value={player1}
-                            onChangeText={setPlayer1}
-                            placeholderTextColor="#555"
-                        />
-                        <TouchableOpacity style={styles.pickerBtn} onPress={() => openPicker('player1')}>
-                            <Ionicons name="people" size={24} color="#666" />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.inputRow}>
-                        <Text style={styles.label}>Opponent</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Name"
-                            value={player2}
-                            onChangeText={setPlayer2}
-                            placeholderTextColor="#555"
-                            autoFocus={false}
-                        />
-                        <TouchableOpacity style={styles.pickerBtn} onPress={() => openPicker('player2')}>
-                            <Ionicons name="people" size={24} color="#666" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {/* Details */}
-                <Text style={styles.sectionLabel}>DETAILS</Text>
-                <View style={styles.formGroup}>
-                    <View style={styles.inputRow}>
-                        <Text style={styles.label}>Date</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formatDate(date)}
-                            editable={false}
-                            placeholderTextColor="#555"
-                        />
-                        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowDatePicker(true)}>
-                            <Ionicons name="calendar" size={24} color="#666" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {showDatePicker && (
-                        <DateTimePicker
-                            testID="dateTimePicker"
-                            value={date}
-                            mode="date"
-                            display="default"
-                            onChange={onDateChange}
-                            themeVariant="dark"
-                        />
-                    )}
-
-                    <View style={styles.divider} />
-                    <View style={styles.inputRow}>
-                        <Text style={styles.label}>Location</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Club or Court"
-                            value={location}
-                            onChangeText={setLocation}
-                            placeholderTextColor="#555"
-                        />
-                        <TouchableOpacity style={styles.pickerBtn} onPress={() => openPicker('location')}>
-                            <Ionicons name="location" size={24} color="#666" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-
-                {/* Score */}
-                <Text style={styles.sectionLabel}>SCORE</Text>
-                <View style={styles.scoreContainer}>
-                    <View style={styles.scoreHeader}>
-                        <Text style={[styles.playerName, { color: '#ccff00' }]}>PLAYER</Text>
-                        <Text style={styles.playerName}>OPPONENT</Text>
-                    </View>
-
-                    {sets.map((set, index) => (
-                        <View key={index} style={styles.setRow}>
-                            <View style={styles.setLabelContainer}>
-                                <Text style={styles.setLabel}>SET {index + 1}</Text>
-                                <TouchableOpacity
-                                    style={[styles.tbToggle, set.isTieBreak && styles.tbActive]}
-                                    onPress={() => toggleTieBreak(index)}
-                                >
-                                    <Text style={[styles.tbText, set.isTieBreak && styles.tbTextActive]}>TB</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.setInputs}>
-                                <TextInput
-                                    style={styles.scoreInput}
-                                    keyboardType="numeric"
-                                    value={set.s1}
-                                    onChangeText={(v) => updateSet(index, 's1', v)}
-                                    placeholder="-"
-                                    placeholderTextColor="#444"
-                                />
-                                <Text style={styles.dash}>-</Text>
-                                <TextInput
-                                    style={styles.scoreInput}
-                                    keyboardType="numeric"
-                                    value={set.s2}
-                                    onChangeText={(v) => updateSet(index, 's2', v)}
-                                    placeholder="-"
-                                    placeholderTextColor="#444"
-                                />
-                            </View>
+                    {/* Players */}
+                    <Text style={styles.sectionLabel}>PLAYERS</Text>
+                    <View style={styles.formGroup}>
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Player</Text>
+                            <TextInput
+                                style={[styles.input, { fontWeight: '600' }]}
+                                value={player1}
+                                onChangeText={setPlayer1}
+                                placeholderTextColor="#555"
+                            />
+                            <TouchableOpacity style={styles.pickerBtn} onPress={() => openPicker('player1')}>
+                                <Ionicons name="people" size={24} color="#666" />
+                            </TouchableOpacity>
                         </View>
-                    ))}
-
-                    {/* Warning Message */}
-                    {scoreWarning ? (
-                        <View style={styles.warningContainer}>
-                            <Ionicons name="alert-circle" size={16} color="#ffa500" />
-                            <Text style={styles.warningText}>{scoreWarning}</Text>
+                        <View style={styles.divider} />
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Opponent</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Name"
+                                value={player2}
+                                onChangeText={setPlayer2}
+                                placeholderTextColor="#555"
+                                autoFocus={false}
+                            />
+                            <TouchableOpacity style={styles.pickerBtn} onPress={() => openPicker('player2')}>
+                                <Ionicons name="people" size={24} color="#666" />
+                            </TouchableOpacity>
                         </View>
-                    ) : null}
+                    </View>
 
-                    <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
-                        <Text style={styles.addSetText}>+ Add Set</Text>
+                    {/* Details */}
+                    <Text style={styles.sectionLabel}>DETAILS</Text>
+                    <View style={styles.formGroup}>
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Date</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={formatDate(date)}
+                                editable={false}
+                                placeholderTextColor="#555"
+                            />
+                            <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowDatePicker(true)}>
+                                <Ionicons name="calendar" size={24} color="#666" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {showDatePicker && (
+                            <DateTimePicker
+                                testID="dateTimePicker"
+                                value={date}
+                                mode="date"
+                                display="default"
+                                onChange={onDateChange}
+                                themeVariant="dark"
+                            />
+                        )}
+
+                        <View style={styles.divider} />
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Location</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Club or Court"
+                                value={location}
+                                onChangeText={setLocation}
+                                placeholderTextColor="#555"
+                            />
+                            <TouchableOpacity style={styles.pickerBtn} onPress={() => openPicker('location')}>
+                                <Ionicons name="location" size={24} color="#666" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Score */}
+                    <Text style={styles.sectionLabel}>SCORE</Text>
+                    <View style={styles.scoreContainer}>
+                        <View style={styles.scoreHeader}>
+                            <Text style={[styles.playerName, { color: '#ccff00' }]}>PLAYER</Text>
+                            <Text style={styles.playerName}>OPPONENT</Text>
+                        </View>
+
+                        {sets.map((set, index) => (
+                            <View key={index} style={styles.setRow}>
+                                <View style={styles.setLabelContainer}>
+                                    <Text style={styles.setLabel}>SET {index + 1}</Text>
+                                    <TouchableOpacity
+                                        style={[styles.tbToggle, set.isTieBreak && styles.tbActive]}
+                                        onPress={() => toggleTieBreak(index)}
+                                    >
+                                        <Text style={[styles.tbText, set.isTieBreak && styles.tbTextActive]}>TB</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.setInputs}>
+                                    <TextInput
+                                        style={styles.scoreInput}
+                                        keyboardType="numeric"
+                                        value={set.s1}
+                                        onChangeText={(v) => updateSet(index, 's1', v)}
+                                        placeholder="-"
+                                        placeholderTextColor="#444"
+                                    />
+                                    <Text style={styles.dash}>-</Text>
+                                    <TextInput
+                                        style={styles.scoreInput}
+                                        keyboardType="numeric"
+                                        value={set.s2}
+                                        onChangeText={(v) => updateSet(index, 's2', v)}
+                                        placeholder="-"
+                                        placeholderTextColor="#444"
+                                    />
+                                </View>
+                            </View>
+                        ))}
+
+                        {/* Warning Message */}
+                        {scoreWarning ? (
+                            <View style={styles.warningContainer}>
+                                <Ionicons name="alert-circle" size={16} color="#ffa500" />
+                                <Text style={styles.warningText}>{scoreWarning}</Text>
+                            </View>
+                        ) : null}
+
+                        <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
+                            <Text style={styles.addSetText}>+ Add Set</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* EXPENSES (NEW) */}
+                    <Text style={styles.sectionLabel}>EXPENSES</Text>
+                    <View style={styles.formGroup}>
+                        {/* Duration */}
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Duration (h)</Text>
+                            <TextInput
+                                style={styles.input}
+                                keyboardType="numeric"
+                                value={duration}
+                                onChangeText={handleDurationChange}
+                                placeholder="1.5"
+                                placeholderTextColor="#555"
+                            />
+                            <Ionicons name="time-outline" size={20} color="#666" />
+                        </View>
+                        <View style={styles.divider} />
+
+                        {/* Toggles */}
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Lighting</Text>
+                            <View style={{ flex: 1 }} />
+                            <TouchableOpacity onPress={toggleLights}>
+                                <Ionicons name={useLights ? "bulb" : "bulb-outline"} size={24} color={useLights ? "#ccff00" : "#666"} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.divider} />
+
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Heating</Text>
+                            <View style={{ flex: 1 }} />
+                            <TouchableOpacity onPress={toggleHeating}>
+                                <Ionicons name={useHeating ? "flame" : "flame-outline"} size={24} color={useHeating ? "#ff3b30" : "#666"} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.divider} />
+
+                        {/* Guest Rate Toggle */}
+                        <View style={styles.inputRow}>
+                            <Text style={styles.label}>Non-Member Rate</Text>
+                            <View style={{ flex: 1 }} />
+                            <TouchableOpacity onPress={toggleGuest}>
+                                <Ionicons name={isGuest ? "people" : "people-outline"} size={24} color={isGuest ? "#ccff00" : "#666"} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.divider} />
+
+                        {/* Total Cost */}
+                        <View style={styles.inputRow}>
+                            <Text style={[styles.label, { color: '#ccff00', fontWeight: '700' }]}>Total (€)</Text>
+                            <TextInput
+                                style={[styles.input, { color: '#ccff00', fontWeight: '700', fontSize: 18 }]}
+                                keyboardType="numeric"
+                                value={totalCost}
+                                onChangeText={setTotalCost}
+                                placeholder="0.00"
+                                placeholderTextColor="#555"
+                            />
+                        </View>
+                    </View>
+
+                    {/* Notes */}
+                    <Text style={styles.sectionLabel}>NOTES</Text>
+                    <View style={styles.formGroup}>
+                        <TextInput
+                            style={[styles.input, { height: 100, paddingVertical: 10, textAlignVertical: 'top' }]}
+                            multiline
+                            placeholder="Match notes..."
+                            value={notes}
+                            onChangeText={setNotes}
+                            placeholderTextColor="#555"
+                        />
+                    </View>
+
+                    <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
+                        <Text style={styles.saveBtnText}>
+                            {saving ? "SAVING..." : "SAVE MATCH RECORD"}
+                        </Text>
                     </TouchableOpacity>
-                </View>
 
-                {/* Notes */}
-                <Text style={styles.sectionLabel}>NOTES</Text>
-                <View style={styles.formGroup}>
-                    <TextInput
-                        style={[styles.input, { height: 100, paddingVertical: 10, textAlignVertical: 'top' }]}
-                        multiline
-                        placeholder="Match notes..."
-                        value={notes}
-                        onChangeText={setNotes}
-                        placeholderTextColor="#555"
-                    />
-                </View>
-
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-                    <Text style={styles.saveBtnText}>
-                        {saving ? "SAVING..." : "SAVE MATCH RECORD"}
-                    </Text>
-                </TouchableOpacity>
-
-                <View style={{ height: 50 }} />
-            </ScrollView>
+                    <View style={{ height: 50 }} />
+                </ScrollView>
+            </KeyboardAvoidingView>
         </View>
     );
 }
