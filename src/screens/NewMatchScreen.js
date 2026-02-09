@@ -21,8 +21,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function NewMatchScreen({ navigation, route }) { // Add route
+    const { t } = useLanguage();
     const [player1, setPlayer1] = useState("Me");
     const [player2, setPlayer2] = useState("");
     const [date, setDate] = useState(new Date()); // Store as Date object internally
@@ -260,7 +262,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
 
     const handleSave = async () => {
         if (!player2.trim()) {
-            Alert.alert("Missing Info", "Please enter an opponent name.");
+            Alert.alert(t('MISSING_FIELDS'), "Please enter an opponent name.");
             return;
         }
 
@@ -347,12 +349,12 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.cancelBtn}>Cancel</Text>
+                    <Text style={styles.cancelBtn}>{t('CANCEL')}</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{isEditing ? "Edit Match" : "New Match"}</Text>
+                <Text style={styles.headerTitle}>{isEditing ? t('EDIT_MATCH') : t('NEW_MATCH_TITLE')}</Text>
                 <TouchableOpacity onPress={handleSave} disabled={saving}>
                     <Text style={[styles.saveHeaderBtn, saving && { opacity: 0.5 }]}>
-                        {saving ? "Saving..." : "Save"}
+                        {saving ? t('CREATING_MATCH') : "Save"}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -392,7 +394,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
                 <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
 
                     {/* Players */}
-                    <Text style={styles.sectionLabel}>PLAYERS</Text>
+                    <Text style={styles.sectionLabel}>{t('PLAYERS') || "PLAYERS"}</Text>
                     <View style={styles.formGroup}>
                         <View style={styles.inputRow}>
                             <Text style={styles.label}>Player</Text>
@@ -408,7 +410,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
                         </View>
                         <View style={styles.divider} />
                         <View style={styles.inputRow}>
-                            <Text style={styles.label}>Opponent</Text>
+                            <Text style={styles.label}>{t('OPPONENT')}</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="Name"
@@ -424,7 +426,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
                     </View>
 
                     {/* Details */}
-                    <Text style={styles.sectionLabel}>DETAILS</Text>
+                    <Text style={styles.sectionLabel}>{t('DATE_TIME') || "DETAILS"}</Text>
                     <View style={styles.formGroup}>
                         <View style={styles.inputRow}>
                             <Text style={styles.label}>Date</Text>
@@ -452,7 +454,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
 
                         <View style={styles.divider} />
                         <View style={styles.inputRow}>
-                            <Text style={styles.label}>Location</Text>
+                            <Text style={styles.label}>{t('LOCATION')}</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="Club or Court"
@@ -467,11 +469,11 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
                     </View>
 
                     {/* Score */}
-                    <Text style={styles.sectionLabel}>SCORE</Text>
+                    <Text style={styles.sectionLabel}>{t('SCORE')}</Text>
                     <View style={styles.scoreContainer}>
                         <View style={styles.scoreHeader}>
                             <Text style={[styles.playerName, { color: '#ccff00' }]}>PLAYER</Text>
-                            <Text style={styles.playerName}>OPPONENT</Text>
+                            <Text style={styles.playerName}>{t('OPPONENT')}</Text>
                         </View>
 
                         {sets.map((set, index) => (
@@ -522,7 +524,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
                     </View>
 
                     {/* EXPENSES (NEW) */}
-                    <Text style={styles.sectionLabel}>EXPENSES</Text>
+                    <Text style={styles.sectionLabel}>{t('EXPENSES')}</Text>
                     <View style={styles.formGroup}>
                         {/* Duration */}
                         <View style={styles.inputRow}>
@@ -583,7 +585,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
                     </View>
 
                     {/* Notes */}
-                    <Text style={styles.sectionLabel}>NOTES</Text>
+                    <Text style={styles.sectionLabel}>{t('NOTES')}</Text>
                     <View style={styles.formGroup}>
                         <TextInput
                             style={[styles.input, { height: 100, paddingVertical: 10, textAlignVertical: 'top' }]}
@@ -597,7 +599,7 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
 
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
                         <Text style={styles.saveBtnText}>
-                            {saving ? "SAVING..." : "SAVE MATCH RECORD"}
+                            {saving ? t('CREATING_MATCH') : t('SAVE_MATCH')}
                         </Text>
                     </TouchableOpacity>
 

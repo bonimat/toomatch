@@ -7,10 +7,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDashboardStats, deleteAllMatches } from '../services/matchService';
 import { deleteAllVenues } from '../services/venueService';
 import { deleteAllUsers } from '../services/userService';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState('CHAMPION');
     const [userAvatar, setUserAvatar] = useState(null);
@@ -79,17 +81,13 @@ const HomeScreen = ({ navigation }) => {
                 </View>
                 <View style={styles.matchInfo}>
                     <Text style={styles.opponent}>vs {match.player2}</Text>
-                    <Text style={styles.location}>{match.location || "Unknown Court"}</Text>
+                    <Text style={styles.location}>{match.location || t('UNKNOWN_COURT')}</Text>
                 </View>
-                {match.totalCost > 0 && (
-                    <View style={styles.costBadge}>
-                        <Text style={styles.costText}>€{match.totalCost}</Text>
-                    </View>
-                )}
+                {/* Cost removed as per request */}
                 <View style={styles.matchScore}>
                     <Text style={styles.scoreText}>{scoreString}</Text>
                     <Text style={[styles.outcomeText, match.userWon ? styles.textWin : styles.textLoss]}>
-                        {match.userWon ? 'WIN' : 'LOSS'}
+                        {match.userWon ? t('WIN') : t('LOSS')}
                     </Text>
                 </View>
             </View>
@@ -112,7 +110,7 @@ const HomeScreen = ({ navigation }) => {
             {/* Header Section */}
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.greeting}>WELCOME BACK</Text>
+                    <Text style={styles.greeting}>{t('WELCOME_BACK')}</Text>
                     <Text style={styles.username}>{userName}</Text>
                 </View>
                 <TouchableOpacity onPress={handleProfile}>
@@ -135,8 +133,8 @@ const HomeScreen = ({ navigation }) => {
                     style={styles.heroCard}
                 >
                     <View style={styles.heroHeader}>
-                        <Text style={styles.heroTitle}>WIN RATE</Text>
-                        <Text style={styles.heroBadge}>LIFETIME</Text>
+                        <Text style={styles.heroTitle}>{t('WIN_RATE')}</Text>
+                        <Text style={styles.heroBadge}>{t('LIFETIME')}</Text>
                     </View>
 
                     <View style={styles.heroMain}>
@@ -145,15 +143,15 @@ const HomeScreen = ({ navigation }) => {
                         <View style={styles.statsRow}>
                             <View style={styles.statItem}>
                                 <Text style={styles.statVal}>{stats.wins}</Text>
-                                <Text style={styles.statLabel}>WINS</Text>
+                                <Text style={styles.statLabel}>{t('WINS')}</Text>
                             </View>
                             <View style={[styles.statItem, styles.statBorder]}>
                                 <Text style={styles.statVal}>{stats.losses}</Text>
-                                <Text style={styles.statLabel}>LOSSES</Text>
+                                <Text style={styles.statLabel}>{t('LOSSES')}</Text>
                             </View>
                             <View style={styles.statItem}>
                                 <Text style={styles.statVal}>{stats.streak}</Text>
-                                <Text style={styles.statLabel}>STREAK</Text>
+                                <Text style={styles.statLabel}>{t('STREAK')}</Text>
                             </View>
                         </View>
                     </View>
@@ -164,12 +162,12 @@ const HomeScreen = ({ navigation }) => {
                     </View>
                 </LinearGradient>
 
-                <Text style={styles.sectionTitle}>RECENT MATCHES</Text>
+                <Text style={styles.sectionTitle}>{t('RECENT_MATCHES')}</Text>
 
                 {/* RECENT MATCH LIST */}
                 <View style={styles.matchesList}>
                     {recentMatches.length === 0 ? (
-                        <Text style={styles.emptyText}>No matches recorded yet. Tap + to add one!</Text>
+                        <Text style={styles.emptyText}>{t('NO_MATCHES')}</Text>
                     ) : (
                         recentMatches.map(renderMatchItem)
                     )}

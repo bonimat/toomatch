@@ -6,8 +6,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getOrCreateUser } from '../services/userService';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function OnboardingScreen({ navigation }) {
+    const { t } = useLanguage();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [nickname, setNickname] = useState('');
@@ -28,7 +30,7 @@ export default function OnboardingScreen({ navigation }) {
 
     const handleStart = async () => {
         if (!firstName.trim() || !lastName.trim() || !nickname.trim()) {
-            Alert.alert("Missing Fields", "Please fill in all fields to start.");
+            Alert.alert(t('MISSING_FIELDS'), t('FILL_ALL'));
             return;
         }
 
@@ -76,12 +78,12 @@ export default function OnboardingScreen({ navigation }) {
             <StatusBar style="light" />
 
             <View style={styles.content}>
-                <Text style={styles.title}>WHO ARE YOU?</Text>
-                <Text style={styles.subtitle}>Let's create your champion profile.</Text>
+                <Text style={styles.title}>{t('WHO_ARE_YOU')}</Text>
+                <Text style={styles.subtitle}>{t('CREATE_PROFILE')}</Text>
 
                 <View style={styles.form}>
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>FIRST NAME</Text>
+                        <Text style={styles.label}>{t('FIRST_NAME')}</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Jannik"
@@ -92,7 +94,7 @@ export default function OnboardingScreen({ navigation }) {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>LAST NAME</Text>
+                        <Text style={styles.label}>{t('LAST_NAME')}</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Sinner"
@@ -103,7 +105,7 @@ export default function OnboardingScreen({ navigation }) {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>NICKNAME</Text>
+                        <Text style={styles.label}>{t('NICKNAME')}</Text>
                         <Text style={styles.helper}>This will be displayed in match history.</Text>
                         <TextInput
                             style={styles.input}
@@ -125,7 +127,7 @@ export default function OnboardingScreen({ navigation }) {
                         colors={['#ccff00', '#99cc00']}
                         style={styles.gradient}
                     >
-                        <Text style={styles.buttonText}>{loading ? 'CREATING...' : 'START PLAYING'}</Text>
+                        <Text style={styles.buttonText}>{loading ? t('CREATING_MATCH') : t('START_PLAYING')}</Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>

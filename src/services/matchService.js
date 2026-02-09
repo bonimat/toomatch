@@ -152,6 +152,17 @@ export async function updateMatch(matchId, matchData) {
     }
 }
 
+export async function deleteMatch(matchId) {
+    try {
+        console.log("Deleting match:", matchId);
+        await deleteDoc(doc(db, "matches", matchId));
+        return true;
+    } catch (e) {
+        console.error("Error deleting match:", e);
+        throw e;
+    }
+}
+
 export async function getDashboardStats() {
     try {
         // Query remains mostly the same, as we kept denormalized data or can use top level

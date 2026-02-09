@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getDetailedStats, getChartData } from '../services/matchService';
 import { PieChart, LineChart, BarChart } from "react-native-chart-kit";
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
 export default function StatsScreen() {
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
     const [showAllRivals, setShowAllRivals] = useState(false);
@@ -49,7 +51,7 @@ export default function StatsScreen() {
             <StatusBar style="light" />
 
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>PERFORMANCE</Text>
+                <Text style={styles.headerTitle}>{t('PERFORMANCE')}</Text>
             </View>
 
             <ScrollView
@@ -59,7 +61,7 @@ export default function StatsScreen() {
 
                 {/* WIN RATE - PIE CHART */}
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroLabel}>WIN / LOSS RATIO</Text>
+                    <Text style={styles.heroLabel}>{t('WIN_RATE')}</Text>
                     <View style={{ alignItems: 'center' }}>
                         <PieChart
                             data={[
@@ -98,12 +100,12 @@ export default function StatsScreen() {
                     <View style={styles.smallCard}>
                         <Ionicons name="flame" size={24} color={stats?.isWinStreak ? "#ccff00" : "#ff3b30"} />
                         <Text style={styles.smallCardValue}>{stats?.streak || 0}</Text>
-                        <Text style={styles.smallCardLabel}>{stats?.isWinStreak ? 'WIN STREAK' : 'LOSS STREAK'}</Text>
+                        <Text style={styles.smallCardLabel}>{stats?.isWinStreak ? (t('WIN_STREAK') || 'WIN STREAK') : (t('LOSS_STREAK') || 'LOSS STREAK')}</Text>
                     </View>
                     <View style={styles.smallCard}>
                         <Ionicons name="tennisball" size={24} color="#666" />
                         <Text style={styles.smallCardValue}>{stats?.total || 0}</Text>
-                        <Text style={styles.smallCardLabel}>MATCHES</Text>
+                        <Text style={styles.smallCardLabel}>{t('MATCHES') || "MATCHES"}</Text>
                     </View>
                 </View>
 
@@ -125,7 +127,7 @@ export default function StatsScreen() {
 
                 {/* ECONOMY CHART */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ECONOMY TREND (6 Months)</Text>
+                    <Text style={styles.sectionTitle}>{t('EXPENSES_TREND')}</Text>
                     <View style={styles.chartCard}>
                         {chartData.labels.length > 0 ? (
                             <LineChart
@@ -168,7 +170,7 @@ export default function StatsScreen() {
 
                 {/* ACTIVITY CHART */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>MATCH FREQUENCY</Text>
+                    <Text style={styles.sectionTitle}>{t('ACTIVITY')}</Text>
                     <View style={styles.chartCard}>
                         {chartData.labels.length > 0 ? (
                             <BarChart
@@ -198,10 +200,10 @@ export default function StatsScreen() {
                 {/* RIVALS */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeaderRow}>
-                        <Text style={styles.sectionTitle}>RIVALS</Text>
+                        <Text style={styles.sectionTitle}>{t('RIVALS')}</Text>
                         {stats?.rivals && stats.rivals.length > 5 && (
                             <TouchableOpacity onPress={() => setShowAllRivals(!showAllRivals)}>
-                                <Text style={styles.viewAllBtn}>{showAllRivals ? 'Show Less' : 'View All'}</Text>
+                                <Text style={styles.viewAllBtn}>{showAllRivals ? t('SHOW_LESS') : t('SHOW_ALL')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>

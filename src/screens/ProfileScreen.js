@@ -7,8 +7,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { updateUser, deleteAllMatches, deleteAllUsers } from '../services/userService'; // Note: deleteAllUsers is currently in userService
 import { deleteAllVenues } from '../services/venueService';
 import { deleteAllMatches as deleteAllMatchesService } from '../services/matchService'; // Correct import
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ProfileScreen({ navigation }) {
+    const { t, language, setLanguage } = useLanguage();
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState(null);
 
@@ -46,7 +48,7 @@ export default function ProfileScreen({ navigation }) {
         // Request permission
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert("Permission Needed", "Sorry, we need camera roll permissions to make this work!");
+            Alert.alert(t('ERROR'), t('PERMISSION_NEEDED') || "Permission Needed");
             return;
         }
 
@@ -65,7 +67,7 @@ export default function ProfileScreen({ navigation }) {
     const handleSave = async () => {
         if (!user) return;
         if (!nickname.trim()) {
-            Alert.alert("Error", "Nickname cannot be empty.");
+            Alert.alert(t('ERROR'), "Nickname cannot be empty.");
             return;
         }
 
@@ -91,10 +93,12 @@ export default function ProfileScreen({ navigation }) {
                 // 2. Update Local Storage
                 await AsyncStorage.setItem('user_session', JSON.stringify(updatedData));
                 setUser(updatedData);
-                Alert.alert("Success", "Profile updated successfully!");
+                await AsyncStorage.setItem('user_session', JSON.stringify(updatedData));
+                setUser(updatedData);
+                Alert.alert(t('SUCCESS'), t('SUCCESS_UPDATE'));
                 navigation.goBack(); // Return to Home to see changes
             } else {
-                Alert.alert("Error", "Failed to update profile online.");
+                Alert.alert(t('ERROR'), "Failed to update profile online.");
             }
         } catch (e) {
             console.error(e);
@@ -106,12 +110,12 @@ export default function ProfileScreen({ navigation }) {
 
     const handleLogout = () => {
         Alert.alert(
-            "Logout",
-            "Are you sure you want to logout? This creates a clean slate for testing (deletes data).",
+            t('LOGOUT'),
+            t('LOGOUT_CONFIRM'),
             [
-                { text: "Cancel", style: "cancel" },
+                { text: t('CANCEL'), style: "cancel" },
                 {
-                    text: "Logout & Delete Data",
+                    text: t('LOGOUT'),
                     style: "destructive",
                     onPress: async () => {
                         setLoading(true);
@@ -142,7 +146,7 @@ export default function ProfileScreen({ navigation }) {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="close" size={28} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>EDIT PROFILE</Text>
+                <Text style={styles.headerTitle}>{t('EDIT_PROFILE')}</Text>
                 <View style={{ width: 28 }} />
             </View>
 
@@ -169,13 +173,32 @@ export default function ProfileScreen({ navigation }) {
                             </View>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setAvatar(null)}>
-                            <Text style={styles.removeAvatarText}>Remove Photo</Text>
+                            <Text style={styles.removeAvatarText}>{t('REMOVE_PHOTO')}</Text>
                         </TouchableOpacity>
+                    </View>
+
+                    {/* Language Selector */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>{t('LANGUAGE')}</Text>
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <TouchableOpacity
+                                style={[styles.langBtn, language === 'IT' && styles.langBtnActive]}
+                                onPress={() => setLanguage('IT')}
+                            >
+                                <Text style={[styles.langText, language === 'IT' && styles.langTextActive]}>🇮🇹 Italiano</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.langBtn, language === 'EN' && styles.langBtnActive]}
+                                onPress={() => setLanguage('EN')}
+                            >
+                                <Text style={[styles.langText, language === 'EN' && styles.langTextActive]}>🇬🇧 English</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     {/* Form Fields */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>NICKNAME</Text>
+                        <Text style={styles.label}>{t('NICKNAME')}</Text>
                         <TextInput
                             style={styles.input}
                             value={nickname}
@@ -186,7 +209,7 @@ export default function ProfileScreen({ navigation }) {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>FIRST NAME</Text>
+                        <Text style={styles.label}>{t('FIRST_NAME')}</Text>
                         <TextInput
                             style={styles.input}
                             value={firstName}
@@ -197,7 +220,7 @@ export default function ProfileScreen({ navigation }) {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>LAST NAME</Text>
+                        <Text style={styles.label}>{t('LAST_NAME')}</Text>
                         <TextInput
                             style={styles.input}
                             value={lastName}
@@ -215,11 +238,11 @@ export default function ProfileScreen({ navigation }) {
                         onPress={handleSave}
                         disabled={loading}
                     >
-                        {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>SAVE CHANGES</Text>}
+                        {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>{t('SAVE_CHANGES')}</Text>}
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                        <Text style={styles.logoutText}>LOGOUT (RESET DATA)</Text>
+                        <Text style={styles.logoutText}>{t('LOGOUT')}</Text>
                     </TouchableOpacity>
 
                     <Text style={styles.versionText}>v1.0.0 • TooMatch</Text>
@@ -359,5 +382,27 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 10,
         marginBottom: 20,
+    },
+    // Language
+    langBtn: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: '#1c1c1e',
+        borderWidth: 1,
+        borderColor: '#333',
+        alignItems: 'center',
+    },
+    langBtnActive: {
+        borderColor: '#ccff00',
+        backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    },
+    langText: {
+        color: '#666',
+        fontWeight: '600',
+    },
+    langTextActive: {
+        color: '#ccff00',
+        fontWeight: '700',
     }
 });
