@@ -1,5 +1,5 @@
 import { db } from "../../firebaseConfig";
-import { collection, addDoc, getDocs, query, where, Timestamp, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, deleteDoc, updateDoc, doc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 
 const USERS_COLLECTION = "users";
@@ -47,6 +47,24 @@ export async function getOrCreateUser(nickname) {
     } catch (e) {
         console.error("Error in getOrCreateUser:", e);
         throw e;
+    }
+}
+
+/**
+ * Update user fields (e.g. nickname, avatar)
+ */
+export async function updateUser(userId, data) {
+    try {
+        if (!userId) {
+            console.error("Error: userId is null or undefined in updateUser");
+            return false;
+        }
+        const userRef = doc(db, USERS_COLLECTION, userId);
+        await updateDoc(userRef, data);
+        return true;
+    } catch (e) {
+        console.error("Error updating user:", e);
+        return false;
     }
 }
 

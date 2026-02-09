@@ -49,7 +49,7 @@ export default function OnboardingScreen({ navigation }) {
             // 3. Save to Local Storage to remember session
             const userData = {
                 uuid: userDoc.uuid,
-                firestoreId: userDoc.id,
+                id: userDoc.id, // Standardize on 'id'
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
                 nickname: nickname.trim()

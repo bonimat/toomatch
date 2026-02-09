@@ -15,6 +15,7 @@ import EntityDetailScreen from './src/screens/EntityDetailScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -107,6 +108,14 @@ export default function App() {
         <Stack.Screen
           name="NewMatch"
           component={NewMatchScreen}
+          options={{
+            presentation: 'modal',
+            ...TransitionPresets.ModalSlideFromBottomIOS,
+          }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
           options={{
             presentation: 'modal',
             ...TransitionPresets.ModalSlideFromBottomIOS,

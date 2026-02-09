@@ -13,6 +13,7 @@ const { width } = Dimensions.get('window');
 const HomeScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState('CHAMPION');
+    const [userAvatar, setUserAvatar] = useState(null);
     const [dashboardData, setDashboardData] = useState({
         stats: { wins: 0, losses: 0, winRate: 0, streak: 0 },
         recentMatches: []
@@ -34,34 +35,16 @@ const HomeScreen = ({ navigation }) => {
                 // Display First Name (uppercase) or Nickname
                 const displayName = user.firstName ? user.firstName.toUpperCase() : user.nickname.toUpperCase();
                 setUserName(displayName);
+                setUserAvatar(user.avatar);
             }
         } catch (e) {
             console.log("Error loading session:", e);
         }
     };
 
-    const handleLogout = async () => {
-        Alert.alert(
-            "Reset App",
-            "Logout will DELETE ALL MATCH DATA to reset for testing. Are you sure?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete & Logout",
-                    style: "destructive",
-                    onPress: async () => {
-                        setLoading(true);
-                        await Promise.all([
-                            deleteAllMatches(),
-                            deleteAllVenues(),
-                            deleteAllUsers()
-                        ]);
-                        await AsyncStorage.clear();
-                        navigation.replace('Splash'); // Reboot app flow
-                    }
-                }
-            ]
-        );
+    // Logout moved to ProfileScreen
+    const handleProfile = () => {
+        navigation.navigate('Profile');
     };
 
     const loadData = async () => {
@@ -132,11 +115,15 @@ const HomeScreen = ({ navigation }) => {
                     <Text style={styles.greeting}>WELCOME BACK</Text>
                     <Text style={styles.username}>{userName}</Text>
                 </View>
-                <TouchableOpacity onPress={handleLogout}>
-                    <Image
-                        source={{ uri: 'https://ui-avatars.com/api/?name=' + userName + '&background=333&color=fff' }}
-                        style={styles.avatar}
-                    />
+                <TouchableOpacity onPress={handleProfile}>
+                    {userAvatar ? (
+                        <Image source={{ uri: userAvatar }} style={styles.avatar} />
+                    ) : (
+                        <Image
+                            source={{ uri: 'https://ui-avatars.com/api/?name=' + userName + '&background=333&color=fff' }}
+                            style={styles.avatar}
+                        />
+                    )}
                 </TouchableOpacity>
             </View>
 
