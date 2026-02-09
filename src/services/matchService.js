@@ -376,3 +376,70 @@ export async function deleteAllMatches() {
         return false;
     }
 }
+
+/**
+ * Get data for charts (Win/Loss, Expenses Trend, Activity)
+ */
+export async function getChartData() {
+    try {
+        const matches = await getAllMatches();
+        const now = new Date();
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(now.getMonth() - 5);
+        sixMonthsAgo.setDate(1); // Start of that month
+
+        // 1. Win/Loss for Pie Chart
+        let wins = 0;
+        let losses = 0;
+
+        // 2. Monthly Trend (Last 6 Months)
+        // Initialize map for last 6 months
+        const monthsMap = new Map();
+        for (let i = 0; i < 6; i++) {
+            const d = new Date();
+            d.setMonth(now.getMonth() - i);
+            const key = d.toLocaleString('default', { month: 'short' }); // e.g. "Jan", "Feb"
+            monthsMap.set(key, { expense: 0, matches: 0, order: i }); // order 0 is current month
+        }
+
+        matches.forEach(m => {
+            // Win/Loss (All time)
+            if (m.userWon) wins++;
+            else losses++;
+
+            // Monthly Data
+            const mDate = new Date(m.date);
+            if (mDate >= sixMonthsAgo) {
+                const key = mDate.toLocaleString('default', { month: 'short' });
+                if (monthsMap.has(key)) {
+                    const current = monthsMap.get(key);
+                    current.expense += (parseFloat(m.totalCost) || 0);
+                    current.matches += 1;
+                    monthsMap.set(key, current);
+                }
+            }
+        });
+
+        // Convert map to array sorted by date (reverse order of 'order')
+        const trendData = Array.from(monthsMap.entries())
+            .map(([label, data]) => ({
+                label,
+                expense: data.expense,
+                matches: data.matches,
+                order: data.order
+            }))
+            .sort((a, b) => b.order - a.order); // Oldest first (Jan -> Feb -> ...)
+
+        return {
+            wins,
+            losses,
+            labels: trendData.map(d => d.label),
+            expenses: trendData.map(d => d.expense),
+            matches: trendData.map(d => d.matches)
+        };
+
+    } catch (e) {
+        console.error("Error getting chart data:", e);
+        return { wins: 0, losses: 0, labels: [], expenses: [], matches: [] };
+    }
+}

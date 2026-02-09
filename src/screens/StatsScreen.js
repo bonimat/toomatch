@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, 
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { getDetailedStats } from '../services/matchService';
+import { getDetailedStats, getChartData } from '../services/matchService';
+import { PieChart, LineChart, BarChart } from "react-native-chart-kit";
 
 const { width } = Dimensions.get('window');
 
@@ -11,11 +12,16 @@ export default function StatsScreen() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
     const [showAllRivals, setShowAllRivals] = useState(false);
+    const [chartData, setChartData] = useState({ wins: 0, losses: 0, labels: [], expenses: [], matches: [] });
 
     const loadStats = async () => {
         setLoading(true);
-        const data = await getDetailedStats();
-        setStats(data);
+        const [detailed, charts] = await Promise.all([
+            getDetailedStats(),
+            getChartData()
+        ]);
+        setStats(detailed);
+        setChartData(charts);
         setLoading(false);
     };
 
@@ -51,20 +57,39 @@ export default function StatsScreen() {
                 refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor="#ccff00" />}
             >
 
-                {/* HERO STAT: WIN RATE */}
+                {/* WIN RATE - PIE CHART */}
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroLabel}>WIN RATE</Text>
-                    <View style={styles.heroValueContainer}>
-                        <Text style={styles.heroValue}>{stats?.winRate || 0}%</Text>
-                        <Ionicons name={stats?.winRate >= 50 ? "trending-up" : "trending-down"} size={32} color={stats?.winRate >= 50 ? "#ccff00" : "#ff3b30"} />
-                    </View>
-                    <Text style={styles.heroSubtext}>
-                        {stats?.wins} Wins - {stats?.losses} Losses
-                    </Text>
-
-                    {/* Visual Bar */}
-                    <View style={styles.barContainer}>
-                        <View style={[styles.barFill, { width: `${stats?.winRate}%` }]} />
+                    <Text style={styles.heroLabel}>WIN / LOSS RATIO</Text>
+                    <View style={{ alignItems: 'center' }}>
+                        <PieChart
+                            data={[
+                                {
+                                    name: "Wins",
+                                    population: chartData.wins,
+                                    color: "#ccff00",
+                                    legendFontColor: "#fff",
+                                    legendFontSize: 12
+                                },
+                                {
+                                    name: "Losses",
+                                    population: chartData.losses,
+                                    color: "#ff3b30",
+                                    legendFontColor: "#fff",
+                                    legendFontSize: 12
+                                }
+                            ]}
+                            width={width - 40}
+                            height={220}
+                            chartConfig={{
+                                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                            }}
+                            accessor={"population"}
+                            backgroundColor={"transparent"}
+                            paddingLeft={"15"}
+                            center={[10, 0]}
+                            absolute
+                            hasLegend={true}
+                        />
                     </View>
                 </View>
 
@@ -98,9 +123,37 @@ export default function StatsScreen() {
                     </View>
                 </View>
 
-                {/* ECONOMY */}
+                {/* ECONOMY CHART */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ECONOMY</Text>
+                    <Text style={styles.sectionTitle}>ECONOMY TREND (6 Months)</Text>
+                    <View style={styles.chartCard}>
+                        {chartData.labels.length > 0 ? (
+                            <LineChart
+                                data={{
+                                    labels: chartData.labels,
+                                    datasets: [{ data: chartData.expenses }]
+                                }}
+                                width={width - 40}
+                                height={220}
+                                yAxisLabel="€"
+                                chartConfig={{
+                                    backgroundColor: "#1c1c1e",
+                                    backgroundGradientFrom: "#1c1c1e",
+                                    backgroundGradientTo: "#1c1c1e",
+                                    decimalPlaces: 0,
+                                    color: (opacity = 1) => `rgba(204, 255, 0, ${opacity})`,
+                                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                                    style: { borderRadius: 16 },
+                                    propsForDots: { r: "4", strokeWidth: "2", stroke: "#ccff00" }
+                                }}
+                                bezier
+                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            />
+                        ) : (
+                            <Text style={styles.emptyText}>No data available.</Text>
+                        )}
+                    </View>
+
                     <View style={styles.row}>
                         <View style={styles.smallCard}>
                             <Text style={[styles.smallCardValue, { color: '#ccff00' }]}>€{stats?.totalSpent || "0.00"}</Text>
@@ -110,6 +163,35 @@ export default function StatsScreen() {
                             <Text style={styles.smallCardValue}>€{stats?.avgCost || "0.00"}</Text>
                             <Text style={styles.smallCardLabel}>AVG / MATCH</Text>
                         </View>
+                    </View>
+                </View>
+
+                {/* ACTIVITY CHART */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>MATCH FREQUENCY</Text>
+                    <View style={styles.chartCard}>
+                        {chartData.labels.length > 0 ? (
+                            <BarChart
+                                data={{
+                                    labels: chartData.labels,
+                                    datasets: [{ data: chartData.matches }]
+                                }}
+                                width={width - 40}
+                                height={220}
+                                yAxisLabel=""
+                                yAxisSuffix=""
+                                chartConfig={{
+                                    backgroundColor: "#1c1c1e",
+                                    backgroundGradientFrom: "#1c1c1e",
+                                    backgroundGradientTo: "#1c1c1e",
+                                    decimalPlaces: 0,
+                                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                                    barPercentage: 0.7,
+                                }}
+                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            />
+                        ) : null}
                     </View>
                 </View>
 
@@ -182,8 +264,13 @@ const styles = StyleSheet.create({
     heroCard: {
         backgroundColor: '#1c1c1e',
         borderRadius: 16,
-        padding: 20,
+        padding: 10, // Reduced padding for chart
         marginBottom: 15,
+        alignItems: 'center' // Center PieChart
+    },
+    chartCard: {
+        marginBottom: 10,
+        alignItems: 'center'
     },
     heroLabel: {
         color: '#888',
