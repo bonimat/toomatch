@@ -9,10 +9,13 @@ import { deleteAllVenues } from '../services/venueService';
 import { deleteAllUsers } from '../services/userService';
 import { useLanguage } from '../context/LanguageContext';
 
+import { useAuth } from '../context/AuthContext';
+
 const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
-    const { t } = useLanguage();
+    const { logout } = useAuth();
+    const { t, language } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState('CHAMPION');
     const [userAvatar, setUserAvatar] = useState(null);
@@ -34,10 +37,19 @@ const HomeScreen = ({ navigation }) => {
             const session = await AsyncStorage.getItem('user_session');
             if (session) {
                 const user = JSON.parse(session);
-                // Display First Name (uppercase) or Nickname
-                const displayName = user.firstName ? user.firstName.toUpperCase() : user.nickname.toUpperCase();
+                // Display Nickname (primary) or First Name (fallback)
+                const displayName = user.nickname ? user.nickname.toUpperCase() : (user.firstName ? user.firstName.toUpperCase() : 'CHAMPION');
                 setUserName(displayName);
                 setUserAvatar(user.avatar);
+
+                // FORCE PROFILE COMPLETION
+                if (!user.nickname) {
+                    Alert.alert(
+                        t('WHO_ARE_YOU'),
+                        t('CREATE_PROFILE'),
+                        [{ text: "OK", onPress: () => navigation.navigate('Profile', { forceUpdate: true }) }]
+                    );
+                }
             }
         } catch (e) {
             console.log("Error loading session:", e);
@@ -67,7 +79,7 @@ const HomeScreen = ({ navigation }) => {
         // Extract date data
         const d = new Date(match.date);
         const day = d.getDate();
-        const month = d.toLocaleString('default', { month: 'short' }).toUpperCase();
+        const month = d.toLocaleString(language === 'IT' ? 'it-IT' : 'en-US', { month: 'short' }).toUpperCase();
 
         // Format Score (e.g. "6-4 6-2")
         const scoreString = match.sets.map(s => `${s.s1}-${s.s2}`).join(', ');
@@ -174,6 +186,8 @@ const HomeScreen = ({ navigation }) => {
                 </View>
 
                 <View style={{ height: 100 }} />
+
+
             </ScrollView>
 
             {/* FAB - New Match */}

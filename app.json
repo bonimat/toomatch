@@ -16,17 +16,22 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.bonimat.toomatch",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "466c7f32-113d-4ef1-a20d-9e872ed61aab"
+      }
+    }
   }
 }

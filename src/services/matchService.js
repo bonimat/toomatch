@@ -1,5 +1,5 @@
-import { db } from "../../firebaseConfig";
-import { collection, addDoc, Timestamp, getDocs, query, orderBy, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import { db, auth } from "../../firebaseConfig";
+import { collection, addDoc, Timestamp, getDocs, query, orderBy, updateDoc, doc, deleteDoc, where } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { getOrCreateUser } from "./userService";
 import { getOrCreateVenue } from "./venueService";
@@ -70,7 +70,8 @@ export async function createMatch(matchData) {
             useHeating: matchData.useHeating || false,
             isGuest: matchData.isGuest || false,
             totalCost: matchData.totalCost || 0,
-            venueId: matchData.venueId || null
+            venueId: matchData.venueId || null,
+            ownerId: auth.currentUser ? auth.currentUser.uid : "anonymous" // Link to Auth User
         };
 
         // Timeout promise to prevent infinite hanging
@@ -166,8 +167,12 @@ export async function deleteMatch(matchId) {
 export async function getDashboardStats() {
     try {
         // Query remains mostly the same, as we kept denormalized data or can use top level
+        const user = auth.currentUser;
+        if (!user) return { stats: { total: 0, wins: 0, losses: 0, winRate: 0, streak: 0 }, recentMatches: [] };
+
         const q = query(
             collection(db, "matches"),
+            where("ownerId", "==", user.uid),
             orderBy("date", "desc"),
             orderBy("createdAt", "desc")
         );
@@ -226,8 +231,12 @@ export async function getDashboardStats() {
 
 export async function getDetailedStats() {
     try {
+        const user = auth.currentUser;
+        if (!user) return { total: 0, wins: 0, losses: 0, winRate: 0, streak: 0, recentHistory: [], rivals: [] };
+
         const q = query(
             collection(db, "matches"),
+            where("ownerId", "==", user.uid),
             orderBy("date", "desc")
         );
         // Note: orderBy requires an index sometimes. If it fails, we might need to create it in Firebase Console.
@@ -285,7 +294,7 @@ export async function getDetailedStats() {
             streak,
             isWinStreak,
             isWinStreak,
-            recentHistory: matches.map(m => m.userWon ? 'W' : 'L').slice(0, 5).reverse(), // Trend for chart/display
+            recentHistory: matches.slice(0, 5).reverse().map(m => m.userWon), // Return booleans for localization
             rivals: sortedRivals,
             // Economy
             totalSpent: totalSpent.toFixed(2),
@@ -301,8 +310,12 @@ export async function getDetailedStats() {
 // Get ALL matches for History Screen
 export async function getAllMatches() {
     try {
+        const user = auth.currentUser;
+        if (!user) return [];
+
         const q = query(
             collection(db, "matches"),
+            where("ownerId", "==", user.uid),
             orderBy("date", "desc")
         );
 

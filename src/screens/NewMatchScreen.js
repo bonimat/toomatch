@@ -291,7 +291,11 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
             }
 
             setSaving(false);
-            navigation.goBack();
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                navigation.navigate('Main');
+            }
         } catch (error) {
             console.error(error);
             Alert.alert("Error", "Could not save match.");
@@ -645,7 +649,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     sectionLabel: {
-        color: '#666',
+        color: '#ccff00',
         fontSize: 11,
         fontWeight: '600',
         marginTop: 24,

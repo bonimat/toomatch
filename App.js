@@ -91,42 +91,80 @@ function MainTabs() {
   );
 }
 
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import AuthScreen from './src/screens/AuthScreen';
+import AdminScreen from './src/screens/AdminScreen';
+
+// ... (Imports remain same)
+
+// Main Navigation Logic
+const AppNavigator = () => {
+  const { user, userProfile, loading } = useAuth();
+
+  if (loading) {
+    return <SplashScreen />; // Or a dedicated loading screen
+  }
+
+  return (
+    console.log("App.js: Rendering NavigationContainer. User present?", !!user),
+    <NavigationContainer>
+      <StatusBar style="light" />
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          ...TransitionPresets.SlideFromRightIOS,
+        }}
+      >
+        {user ? (
+          (!userProfile || !userProfile.nickname || userProfile.nickname.trim() === '') ? (
+            /* FORCE PROFILE UPDATE STACK */
+            <Stack.Screen
+              name="ForceProfile"
+              component={ProfileScreen}
+              initialParams={{ forceUpdate: true }}
+              options={{ headerShown: false }}
+            />
+          ) : (
+            /* NORMAL APP STACK */
+            <>
+              <Stack.Screen name="Main" component={MainTabs} />
+              <Stack.Screen name="EntityDetail" component={EntityDetailScreen} />
+              <Stack.Screen
+                name="NewMatch"
+                component={NewMatchScreen}
+                options={{
+                  presentation: 'modal',
+                  ...TransitionPresets.ModalSlideFromBottomIOS,
+                }}
+              />
+              <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{
+                  presentation: 'modal',
+                  ...TransitionPresets.ModalSlideFromBottomIOS,
+                }}
+              />
+            </>
+          )
+        ) : (
+          <>
+            <Stack.Screen name="Auth" component={AuthScreen} />
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          </>
+        )}
+        <Stack.Screen name="Admin" component={AdminScreen} />
+      </Stack.Navigator>
+    </NavigationContainer >
+  );
+};
+
 export default function App() {
   return (
-    <LanguageProvider>
-      <NavigationContainer>
-        <StatusBar style="light" />
-        <Stack.Navigator
-          initialRouteName="Splash"
-          screenOptions={{
-            headerShown: false,
-            ...TransitionPresets.SlideFromRightIOS,
-          }}
-        >
-          <Stack.Screen name="Splash" component={SplashScreen} />
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="EntityDetail" component={EntityDetailScreen} />
-
-          {/* Modal for New Match */}
-          <Stack.Screen
-            name="NewMatch"
-            component={NewMatchScreen}
-            options={{
-              presentation: 'modal',
-              ...TransitionPresets.ModalSlideFromBottomIOS,
-            }}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{
-              presentation: 'modal',
-              ...TransitionPresets.ModalSlideFromBottomIOS,
-            }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </LanguageProvider>
+    <AuthProvider>
+      <LanguageProvider>
+        <AppNavigator />
+      </LanguageProvider>
+    </AuthProvider>
   );
 }

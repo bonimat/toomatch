@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     sectionTitle: {
-        color: '#666',
+        color: '#ccff00',
         fontSize: 12,
         fontWeight: 'bold',
         letterSpacing: 1,

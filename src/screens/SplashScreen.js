@@ -1,15 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 const SplashScreen = () => {
-    const navigation = useNavigation();
-
     // Animation Values
     const textOpacity = useRef(new Animated.Value(0)).current;
     const textScale = useRef(new Animated.Value(0.9)).current;
@@ -36,27 +31,18 @@ const SplashScreen = () => {
                 useNativeDriver: true,
             }),
         ]).start();
-
-        // Check Session & Navigate
-        const checkSession = async () => {
-            try {
-                const session = await AsyncStorage.getItem('user_session');
-                // Wait a bit for animation sake
-                setTimeout(() => {
-                    if (session) {
-                        navigation.replace('Main');
-                    } else {
-                        navigation.replace('Onboarding');
-                    }
-                }, 2000);
-            } catch (e) {
-                navigation.replace('Onboarding');
-            }
-        };
-
-        checkSession();
-
     }, []);
+
+    const emergencyReset = async () => {
+        try {
+            await AsyncStorage.clear();
+            Alert.alert("App Reset!", "All local data cleared. Please restart the app manually to finish.");
+            // navigation.replace('Auth'); // ERROR: 'Auth' not in navigator if user is logged in
+        } catch (e) {
+            console.error("Failed to clear AsyncStorage:", e);
+            Alert.alert("Error", "Failed to reset app data.");
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -74,6 +60,10 @@ const SplashScreen = () => {
                 <Text style={styles.subtitle}>SERVE IT</Text>
             </Animated.View>
 
+            {/* EMERGENCY RESET BUTTON - For stuck users */}
+            <TouchableOpacity onPress={emergencyReset} style={{ marginTop: 50, padding: 20 }}>
+                <Text style={{ color: 'red', fontWeight: 'bold' }}>EMERGENCY RESET (Click if stuck)</Text>
+            </TouchableOpacity>
         </View>
     );
 };

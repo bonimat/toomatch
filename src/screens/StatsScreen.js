@@ -61,19 +61,19 @@ export default function StatsScreen() {
 
                 {/* WIN RATE - PIE CHART */}
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroLabel}>{t('WIN_RATE')}</Text>
+                    <Text style={[styles.heroLabel, { color: '#ccff00' }]}>{t('WIN_RATE')}</Text>
                     <View style={{ alignItems: 'center' }}>
                         <PieChart
                             data={[
                                 {
-                                    name: "Wins",
+                                    name: t('WINS'),
                                     population: chartData.wins,
                                     color: "#ccff00",
                                     legendFontColor: "#fff",
                                     legendFontSize: 12
                                 },
                                 {
-                                    name: "Losses",
+                                    name: t('LOSSES'),
                                     population: chartData.losses,
                                     color: "#ff3b30",
                                     legendFontColor: "#fff",
@@ -98,29 +98,29 @@ export default function StatsScreen() {
                 {/* ROW: STREAK & TOTAL */}
                 <View style={styles.row}>
                     <View style={styles.smallCard}>
-                        <Ionicons name="flame" size={24} color={stats?.isWinStreak ? "#ccff00" : "#ff3b30"} />
+                        <Ionicons name="flame" size={24} color="#ff3b30" />
                         <Text style={styles.smallCardValue}>{stats?.streak || 0}</Text>
-                        <Text style={styles.smallCardLabel}>{stats?.isWinStreak ? (t('WIN_STREAK') || 'WIN STREAK') : (t('LOSS_STREAK') || 'LOSS STREAK')}</Text>
+                        <Text style={styles.smallCardLabel}>{stats?.isWinStreak ? t('WIN_STREAK') : t('LOSS_STREAK')}</Text>
                     </View>
                     <View style={styles.smallCard}>
-                        <Ionicons name="tennisball" size={24} color="#666" />
+                        <Ionicons name="tennisball" size={24} color="#ccff00" />
                         <Text style={styles.smallCardValue}>{stats?.total || 0}</Text>
-                        <Text style={styles.smallCardLabel}>{t('MATCHES') || "MATCHES"}</Text>
+                        <Text style={styles.smallCardLabel}>{t('MATCHES')}</Text>
                     </View>
                 </View>
 
                 {/* RECENT FORM */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>RECENT FORM</Text>
+                    <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>{t('RECENT_FORM')}</Text>
                     <View style={styles.formContainer}>
                         {stats?.recentHistory && stats.recentHistory.length > 0 ? (
-                            stats.recentHistory.map((result, index) => (
-                                <View key={index} style={[styles.formBadge, result === 'W' ? styles.winBadge : styles.lossBadge]}>
-                                    <Text style={styles.formText}>{result}</Text>
+                            stats.recentHistory.map((isWin, index) => (
+                                <View key={index} style={[styles.formBadge, isWin ? styles.winBadge : styles.lossBadge]}>
+                                    <Text style={styles.formText}>{isWin ? t('WINS_ABBR') : t('LOSSES_ABBR')}</Text>
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.emptyText}>No matches yet.</Text>
+                            <Text style={styles.emptyText}>{t('NO_MATCHES')}</Text>
                         )}
                     </View>
                 </View>
@@ -152,18 +152,18 @@ export default function StatsScreen() {
                                 style={{ marginVertical: 8, borderRadius: 16 }}
                             />
                         ) : (
-                            <Text style={styles.emptyText}>No data available.</Text>
+                            <Text style={styles.emptyText}>{t('NO_DATA')}</Text>
                         )}
                     </View>
 
                     <View style={styles.row}>
                         <View style={styles.smallCard}>
                             <Text style={[styles.smallCardValue, { color: '#ccff00' }]}>€{stats?.totalSpent || "0.00"}</Text>
-                            <Text style={styles.smallCardLabel}>TOTAL SPENT</Text>
+                            <Text style={styles.smallCardLabel}>{t('TOTAL_SPENT')}</Text>
                         </View>
                         <View style={styles.smallCard}>
                             <Text style={styles.smallCardValue}>€{stats?.avgCost || "0.00"}</Text>
-                            <Text style={styles.smallCardLabel}>AVG / MATCH</Text>
+                            <Text style={styles.smallCardLabel}>{t('AVG_MATCH')}</Text>
                         </View>
                     </View>
                 </View>
@@ -216,7 +216,7 @@ export default function StatsScreen() {
                                     <Text style={styles.rivalName}>{rival.name}</Text>
                                 </View>
                                 <View style={styles.rivalStats}>
-                                    <Text style={styles.rivalRatio}>{rival.won} / {rival.played} Won</Text>
+                                    <Text style={styles.rivalRatio}>{rival.won} / {rival.played} {t('WINS')}</Text>
                                     <View style={styles.miniBarContainer}>
                                         <View style={[styles.miniBarFill, { width: `${(rival.won / rival.played) * 100}%` }]} />
                                     </View>
@@ -224,7 +224,7 @@ export default function StatsScreen() {
                             </View>
                         ))
                     ) : (
-                        <Text style={styles.emptyText}>Play more matches to see rival stats.</Text>
+                        <Text style={styles.emptyText}>{t('PLAY_MORE')}</Text>
                     )}
                 </View>
 
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
         paddingRight: 4,
     },
     sectionTitle: {
-        color: '#666',
+        color: '#ccff00',
         fontSize: 12,
         fontWeight: 'bold',
         letterSpacing: 1,

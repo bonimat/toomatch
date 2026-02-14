@@ -6,8 +6,10 @@ import { db } from '../../firebaseConfig';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getOrCreateUser } from '../services/userService';
 import { getOrCreateVenue } from '../services/venueService';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function EntityDetailScreen({ route, navigation }) {
+    const { t } = useLanguage();
     const { type, id } = route.params;
     const isNew = !id;
     const collectionName = type === 'player' ? 'users' : 'venues';
@@ -63,18 +65,15 @@ export default function EntityDetailScreen({ route, navigation }) {
                     setAddress(data.address || '');
                     setWebsite(data.website || '');
                     setSurface(data.surface || '');
-                    setSurface(data.surface || '');
                     setPricePerHour(data.pricePerHour ? String(data.pricePerHour) : '');
                     setGuestPrice(data.guestPricePerHour ? String(data.guestPricePerHour) : ''); // NEW
-                    setLightPrice(data.lightPricePerHour ? String(data.lightPricePerHour) : '');
-                    setHeatingPrice(data.heatingPricePerHour ? String(data.heatingPricePerHour) : '');
                     setLightPrice(data.lightPricePerHour ? String(data.lightPricePerHour) : '');
                     setHeatingPrice(data.heatingPricePerHour ? String(data.heatingPricePerHour) : '');
                 }
                 // Common
                 setIsDefault(data.isDefault || false);
             } else {
-                Alert.alert("Error", "Item not found");
+                Alert.alert(t('ERROR'), t('ERROR'));
                 navigation.goBack();
             }
         } catch (e) {
@@ -144,7 +143,7 @@ export default function EntityDetailScreen({ route, navigation }) {
             navigation.goBack();
         } catch (e) {
             console.error(e);
-            Alert.alert("Error", "Could not save.");
+            Alert.alert(t('ERROR'), t('ERROR_SAVE'));
         } finally {
             setSaving(false);
         }
@@ -152,12 +151,12 @@ export default function EntityDetailScreen({ route, navigation }) {
 
     const handleDelete = async () => {
         Alert.alert(
-            "Delete",
-            "Are you sure? This cannot be undone.",
+            t('DELETE_TITLE'),
+            t('DELETE_MSG'),
             [
-                { text: "Cancel", style: "cancel" },
+                { text: t('CANCEL'), style: "cancel" },
                 {
-                    text: "Delete",
+                    text: t('DELETE'),
                     style: "destructive",
                     onPress: async () => {
                         try {
@@ -211,13 +210,13 @@ export default function EntityDetailScreen({ route, navigation }) {
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.backBtn}>Close</Text>
+                    <Text style={styles.backBtn}>{t('CLOSE')}</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>{editMode ? (isNew ? 'New' : 'Edit') : 'Details'}</Text>
+                <Text style={styles.title}>{editMode ? (isNew ? t('NEW') : t('EDIT')) : t('DETAILS')}</Text>
 
                 {!isNew && (
                     <TouchableOpacity onPress={() => setEditMode(!editMode)}>
-                        <Text style={styles.editBtn}>{editMode ? 'Cancel' : 'Edit'}</Text>
+                        <Text style={styles.editBtn}>{editMode ? t('CANCEL') : t('EDIT')}</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -226,35 +225,34 @@ export default function EntityDetailScreen({ route, navigation }) {
 
                 {/* HEADLINE SECTION */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionHeader}>IDENTITY</Text>
-                    {renderField(type === 'player' ? 'NICKNAME' : 'VENUE NAME', name, setName, isNew ? "e.g. 'Mario T.'" : "Name", type === 'player' ? 'person' : 'business')}
+                    <Text style={styles.sectionHeader}>{t('IDENTITY')}</Text>
+                    {renderField(type === 'player' ? t('NICKNAME') : t('VENUE_NAME'), name, setName, isNew ? t('PLACEHOLDER_NAME') : "Name", type === 'player' ? 'person' : 'business')}
 
                     {type === 'player' && (
                         <>
-                            {renderField('FIRST NAME', firstName, setFirstName, "Mario", "person-outline")}
-                            {renderField('LAST NAME', lastName, setLastName, "Rossi", "person-outline")}
+                            {renderField(t('FIRST_NAME'), firstName, setFirstName, "Mario", "person-outline")}
+                            {renderField(t('LAST_NAME'), lastName, setLastName, "Rossi", "person-outline")}
                         </>
                     )}
                 </View>
 
                 {/* CONTACT SECTION */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionHeader}>CONTACT</Text>
-                    {renderField('PHONE', phone, setPhone, "+39 ...", "call-outline")}
-                    {type === 'player' && renderField('EMAIL', email, setEmail, "user@example.com", "mail-outline")}
-                    {type === 'venue' && renderField('WEBSITE', website, setWebsite, "www.tennisclub.it", "globe-outline")}
+                    <Text style={styles.sectionHeader}>{t('CONTACT')}</Text>
+                    {renderField(t('PHONE'), phone, setPhone, "+39 ...", "call-outline")}
+                    {type === 'player' && renderField(t('EMAIL'), email, setEmail, "user@example.com", "mail-outline")}
+                    {type === 'venue' && renderField(t('WEBSITE'), website, setWebsite, "www.tennisclub.it", "globe-outline")}
                 </View>
 
                 {/* INFO SECTION */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionHeader}>INFO</Text>
+                    <Text style={styles.sectionHeader}>{t('INFO')}</Text>
                     {type === 'player' ? (
                         renderField('CITY', city, setCity, "Milan", "location-outline")
-                        // Level removed as requested
                     ) : (
                         <>
-                            {renderField('ADDRESS', address, setAddress, "Street, City", "location-outline", true)}
-                            {renderField('SURFACE', surface, setSurface, "Clay, Hard, Grass", "layers-outline")}
+                            {renderField(t('ADDRESS'), address, setAddress, "Street, City", "location-outline", true)}
+                            {renderField(t('SURFACE'), surface, setSurface, "Clay, Hard, Grass", "layers-outline")}
                         </>
                     )}
                 </View>
@@ -263,8 +261,8 @@ export default function EntityDetailScreen({ route, navigation }) {
                 <View style={styles.section}>
                     <View style={styles.switchRow}>
                         <View>
-                            <Text style={styles.switchLabel}>SET AS DEFAULT</Text>
-                            <Text style={styles.switchSub}>Use this as pre-selected option</Text>
+                            <Text style={styles.switchLabel}>{t('SET_DEFAULT')}</Text>
+                            <Text style={styles.switchSub}>{t('DEFAULT_SUB')}</Text>
                         </View>
                         {editMode ? (
                             <TouchableOpacity onPress={() => setIsDefault(!isDefault)}>
@@ -279,26 +277,26 @@ export default function EntityDetailScreen({ route, navigation }) {
                 {/* RATES SECTION (VENUES ONLY) */}
                 {type === 'venue' && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionHeader}>RATES (€/h)</Text>
-                        <Text style={styles.helperText}>Cost per hour for booking, light, and heating.</Text>
-                        {renderField('MEMBER PRICE', pricePerHour, setPricePerHour, "0.00", "person-outline")}
-                        {renderField('NON-MEMBER PRICE', guestPrice, setGuestPrice, "0.00", "people-outline")}
-                        {renderField('LIGHTING', lightPrice, setLightPrice, "0.00", "bulb-outline")}
-                        {renderField('HEATING', heatingPrice, setHeatingPrice, "0.00", "flame-outline")}
+                        <Text style={styles.sectionHeader}>{t('RATES')}</Text>
+                        <Text style={styles.helperText}>{t('RATES_HELPER')}</Text>
+                        {renderField(t('MEMBER_PRICE'), pricePerHour, setPricePerHour, "0.00", "person-outline")}
+                        {renderField(t('NON_MEMBER_PRICE'), guestPrice, setGuestPrice, "0.00", "people-outline")}
+                        {renderField(t('LIGHTING'), lightPrice, setLightPrice, "0.00", "bulb-outline")}
+                        {renderField(t('HEATING'), heatingPrice, setHeatingPrice, "0.00", "flame-outline")}
                     </View>
                 )}
 
                 {/* SAVE BUTTON */}
                 {editMode && (
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-                        <Text style={styles.saveBtnText}>{saving ? 'SAVING...' : 'SAVE CHANGES'}</Text>
+                        <Text style={styles.saveBtnText}>{saving ? t('SAVING') : t('SAVE_CHANGES')}</Text>
                     </TouchableOpacity>
                 )}
 
                 {/* DELETE BUTTON */}
                 {!isNew && editMode && (
                     <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                        <Text style={styles.deleteBtnText}>DELETE PERMANENTLY</Text>
+                        <Text style={styles.deleteBtnText}>{t('DELETE_PERMANENTLY')}</Text>
                     </TouchableOpacity>
                 )}
 
@@ -337,7 +335,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     sectionHeader: {
-        color: '#666',
+        color: '#ccff00',
         fontSize: 11,
         fontWeight: '700',
         letterSpacing: 1,

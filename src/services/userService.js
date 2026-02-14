@@ -1,5 +1,5 @@
 import { db } from "../../firebaseConfig";
-import { collection, addDoc, getDocs, query, where, Timestamp, deleteDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, addDoc, getDocs, setDoc, query, where, Timestamp, deleteDoc, updateDoc, doc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 
 const USERS_COLLECTION = "users";
@@ -60,7 +60,8 @@ export async function updateUser(userId, data) {
             return false;
         }
         const userRef = doc(db, USERS_COLLECTION, userId);
-        await updateDoc(userRef, data);
+        // Use setDoc with merge: true so it creates the doc if it doesn't exist
+        await setDoc(userRef, data, { merge: true });
         return true;
     } catch (e) {
         console.error("Error updating user:", e);
