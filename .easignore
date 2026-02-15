@@ -1,0 +1,9 @@
+# Standard exclusions
+node_modules/
+.expo/
+npm-debug.*
+*.pem
+.DS_Store
+
+# Do NOT ignore firebaseConfig.js for EAS Build
+!firebaseConfig.js

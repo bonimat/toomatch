@@ -109,21 +109,24 @@ export async function getDefaultOpponent() {
         return null;
     }
 }
-// DELETE ALL users (for testing/reset)
-export async function deleteAllUsers() {
+// DELETE ALL OPPONENTS (Excluding current user)
+export async function deleteOpponents(currentUserId) {
     try {
-        console.log("Deleting ALL users...");
+        console.log("Deleting opponents, keeping:", currentUserId);
         const snapshot = await getDocs(collection(db, USERS_COLLECTION));
 
-        const deletePromises = snapshot.docs.map(doc =>
-            deleteDoc(doc.ref)
-        );
+        const deletePromises = [];
+        snapshot.docs.forEach(doc => {
+            if (doc.id !== currentUserId) {
+                deletePromises.push(deleteDoc(doc.ref));
+            }
+        });
 
         await Promise.all(deletePromises);
-        console.log(`Deleted ${deletePromises.length} users.`);
+        console.log(`Deleted ${deletePromises.length} opponents.`);
         return true;
     } catch (e) {
-        console.error("Error deleting all users:", e);
+        console.error("Error deleting opponents:", e);
         return false;
     }
 }

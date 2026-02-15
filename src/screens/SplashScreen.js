@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ const SplashScreen = () => {
     const glowOpacity = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
+        console.log("SplashScreen: MOUNTED and Animating...");
         // Simple elegant Fade In
         Animated.parallel([
             Animated.timing(textOpacity, {
@@ -37,7 +39,6 @@ const SplashScreen = () => {
         try {
             await AsyncStorage.clear();
             Alert.alert("App Reset!", "All local data cleared. Please restart the app manually to finish.");
-            // navigation.replace('Auth'); // ERROR: 'Auth' not in navigator if user is logged in
         } catch (e) {
             console.error("Failed to clear AsyncStorage:", e);
             Alert.alert("Error", "Failed to reset app data.");

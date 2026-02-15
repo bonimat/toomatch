@@ -93,7 +93,7 @@ function MainTabs() {
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AuthScreen from './src/screens/AuthScreen';
-import AdminScreen from './src/screens/AdminScreen';
+
 
 // ... (Imports remain same)
 
@@ -102,6 +102,7 @@ const AppNavigator = () => {
   const { user, userProfile, loading } = useAuth();
 
   if (loading) {
+    console.log("App.js: Loading is TRUE -> Showing SplashScreen");
     return <SplashScreen />; // Or a dedicated loading screen
   }
 
@@ -153,7 +154,7 @@ const AppNavigator = () => {
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           </>
         )}
-        <Stack.Screen name="Admin" component={AdminScreen} />
+
       </Stack.Navigator>
     </NavigationContainer >
   );

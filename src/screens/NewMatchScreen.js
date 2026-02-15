@@ -297,8 +297,8 @@ export default function NewMatchScreen({ navigation, route }) { // Add route
                 navigation.navigate('Main');
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "Could not save match.");
+            console.error("Save Match Error:", error);
+            Alert.alert(t('ERROR') || "Error", error.message || "Could not save match.");
             setSaving(false);
         }
     };

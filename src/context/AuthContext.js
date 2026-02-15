@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from '../../firebaseConfig';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
@@ -7,6 +7,9 @@ import { doc, getDoc, setDoc, updateDoc, Timestamp, collection, getDocs, query, 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
+
+// Global variable to track first load across re-renders
+let globalFirstLoad = true;
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -21,8 +24,10 @@ export const AuthProvider = ({ children }) => {
         }
 
         console.log("AuthContext: Setting up onAuthStateChanged listener...");
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             console.log("AuthContext: Auth state changed. User:", firebaseUser ? firebaseUser.uid : "null");
+
             if (firebaseUser) {
                 // User is signed in
                 setUser(firebaseUser);
@@ -32,7 +37,18 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
                 setUserProfile(null);
             }
-            setLoading(false);
+
+            // Enforce 2-second delay ONLY on the very first load
+            if (globalFirstLoad) {
+                console.log("AuthContext: First load - verifying Splash Screen delay...");
+                setTimeout(() => {
+                    console.log("AuthContext: Delay over - Hiding Splash Screen.");
+                    setLoading(false);
+                    globalFirstLoad = false;
+                }, 2000);
+            } else {
+                setLoading(false);
+            }
         });
 
         return unsubscribe;

@@ -4,13 +4,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { updateUser, deleteAllUsers } from '../services/userService'; // Note: deleteAllUsers is currently in userService
-import { deleteAllVenues } from '../services/venueService';
-import { deleteAllMatches } from '../services/matchService'; // Correct import
+import { updateUser } from '../services/userService';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteUser } from 'firebase/auth'; // Import deleteUser
 import { doc, deleteDoc } from 'firebase/firestore'; // Import firestore delete
 import { auth, db } from '../../firebaseConfig'; // Import auth and db
+import Constants from 'expo-constants';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -124,8 +123,6 @@ export default function ProfileScreen({ navigation, route }) {
 
             if (success) {
                 // 2. Update Local Storage
-                await AsyncStorage.setItem('user_session', JSON.stringify(updatedData));
-                setUser(updatedData);
                 await AsyncStorage.setItem('user_session', JSON.stringify(updatedData));
                 setUser(updatedData);
                 Alert.alert(t('SUCCESS'), t('SUCCESS_UPDATE'));
@@ -323,60 +320,51 @@ export default function ProfileScreen({ navigation, route }) {
                         {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>{t('SAVE_CHANGES')}</Text>}
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                        <Text style={styles.logoutText}>{t('LOGOUT')}</Text>
-                    </TouchableOpacity>
+                    <View style={styles.footerActions}>
+                        <TouchableOpacity style={styles.textLinkBtn} onPress={handleLogout}>
+                            <Text style={styles.textLinkDanger}>{t('LOGOUT')}</Text>
+                        </TouchableOpacity>
 
-                    {/* DELETE ACCOUNT BUTTON - Accessible to ALL users */}
-                    <TouchableOpacity
-                        style={[styles.logoutBtn, { borderColor: '#ff0000', backgroundColor: 'rgba(255, 0, 0, 0.2)', marginTop: -20 }]}
-                        onPress={() => {
-                            Alert.alert(
-                                t('DELETE_ACCOUNT') || "Delete Account",
-                                t('DELETE_ACCOUNT_CONFIRM') || "Are you sure? This will permanently delete your account and data.",
-                                [
-                                    { text: t('CANCEL'), style: "cancel" },
-                                    {
-                                        text: t('YES_DELETE'),
-                                        style: "destructive",
-                                        onPress: async () => {
-                                            // Re-use the deletion logic
-                                            setLoading(true);
-                                            try {
-                                                if (auth.currentUser) {
-                                                    // 1. Delete Firestore Profile
-                                                    if (user && user.id) {
-                                                        const userRef = doc(db, "users", user.id);
-                                                        await deleteDoc(userRef);
+                        <TouchableOpacity
+                            style={[styles.textLinkBtn, { marginTop: 10 }]}
+                            onPress={async () => {
+                                Alert.alert(
+                                    t('CLEAR_DATA') || "Clear Data",
+                                    t('CLEAR_DATA_CONFIRM') || "This will delete ALL your matches but keep your account. This cannot be undone.",
+                                    [
+                                        { text: t('CANCEL'), style: "cancel" },
+                                        {
+                                            text: t('DELETE_ALL'),
+                                            style: "destructive",
+                                            onPress: async () => {
+                                                setLoading(true);
+                                                try {
+                                                    const { clearUserMatches } = require('../services/matchService');
+                                                    const success = await clearUserMatches();
+                                                    if (success) {
+                                                        Alert.alert(t('SUCCESS'), "All matches deleted.");
+                                                    } else {
+                                                        Alert.alert(t('ERROR'), "Failed to delete data.");
                                                     }
-                                                    // 2. Delete Auth User
-                                                    await deleteUser(auth.currentUser);
-                                                    // 3. Clear local storage
-                                                    await AsyncStorage.clear();
-                                                } else {
-                                                    await logout();
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    Alert.alert(t('ERROR'), "An error occurred.");
+                                                } finally {
+                                                    setLoading(false);
                                                 }
-                                            } catch (e) {
-                                                console.error("Error deleting user:", e);
-                                                if (e.code === 'auth/requires-recent-login') {
-                                                    Alert.alert("Security Issue", "To delete your account, you must log in again. Logging you out now...");
-                                                } else {
-                                                    Alert.alert("Error", "Could not delete account fully.");
-                                                }
-                                                await logout();
-                                            } finally {
-                                                setLoading(false);
                                             }
                                         }
-                                    }
-                                ]
-                            );
-                        }}
-                    >
-                        <Text style={[styles.logoutBtn, { color: '#ff0000' }]}>{t('DELETE_ACCOUNT') || "DELETE ACCOUNT"}</Text>
-                    </TouchableOpacity>
+                                    ]
+                                );
+                            }}
+                        >
+                            <Text style={{ color: '#666', fontSize: 12, textDecorationLine: 'underline' }}>
+                                {t('CLEAR_DATA') || "Clear Matches Data"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
-                    <Text style={styles.versionText}>v1.0.0 • TooMatch</Text>
+                    <Text style={styles.versionText}>v{Constants.expoConfig?.version || '1.0.0'} • TooMatch</Text>
 
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -535,5 +523,19 @@ const styles = StyleSheet.create({
     langTextActive: {
         color: '#ccff00',
         fontWeight: '700',
-    }
+    },
+    footerActions: {
+        alignItems: 'center',
+        marginTop: 10,
+        marginBottom: 30,
+    },
+    textLinkBtn: {
+        padding: 10,
+    },
+    textLinkDanger: {
+        color: '#ff3b30',
+        fontSize: 14,
+        fontWeight: '600',
+        textDecorationLine: 'underline',
+    },
 });

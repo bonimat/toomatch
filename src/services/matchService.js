@@ -38,22 +38,22 @@ export async function createMatch(matchData) {
 
             // Relational Objects (Snapshot of basic info + ID link)
             player1: {
-                uuid: player1Doc?.uuid,
-                nickname: player1Doc?.nickname, // Denormalized for display
+                uuid: player1Doc?.uuid || null,
+                nickname: player1Doc?.nickname || "Unknown",
             },
             player2: {
-                uuid: player2Doc?.uuid,
-                nickname: player2Doc?.nickname, // Denormalized for display
+                uuid: player2Doc?.uuid || null,
+                nickname: player2Doc?.nickname || "Unknown",
             },
             venue: venueDoc ? {
-                uuid: venueDoc.uuid,
-                name: venueDoc.name,
+                uuid: venueDoc.uuid || null,
+                name: venueDoc.name || "Unknown",
             } : null,
 
             // Legacy/Display fields (keeping top level for compatibility with current queries if needed)
-            player1_name: matchData.player1,
-            player2_name: matchData.player2,
-            location_name: matchData.location,
+            player1_name: matchData.player1 || "Unknown",
+            player2_name: matchData.player2 || "Unknown",
+            location_name: matchData.location || "Unknown",
 
             date: matchData.date || new Date().toISOString(),
             sets: matchData.sets.map(s => ({
@@ -74,16 +74,8 @@ export async function createMatch(matchData) {
             ownerId: auth.currentUser ? auth.currentUser.uid : "anonymous" // Link to Auth User
         };
 
-        // Timeout promise to prevent infinite hanging
-        const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Request timed out (Firebase)")), 10000)
-        );
-
-        // Race between DB call and timeout
-        const docRef = await Promise.race([
-            addDoc(collection(db, "matches"), payload),
-            timeout
-        ]);
+        // Direct DB call - Firestore SDK handles offline/latency better than manual timeout
+        const docRef = await addDoc(collection(db, "matches"), payload);
 
         console.log("Match created with ID:", docRef.id, " and UUID:", matchUuid);
         return docRef.id;
@@ -106,22 +98,22 @@ export async function updateMatch(matchId, matchData) {
         const payload = {
             // Relational Objects
             player1: {
-                uuid: player1Doc?.uuid,
-                nickname: player1Doc?.nickname,
+                uuid: player1Doc?.uuid || null,
+                nickname: player1Doc?.nickname || "Unknown",
             },
             player2: {
-                uuid: player2Doc?.uuid,
-                nickname: player2Doc?.nickname,
+                uuid: player2Doc?.uuid || null,
+                nickname: player2Doc?.nickname || "Unknown",
             },
             venue: venueDoc ? {
-                uuid: venueDoc.uuid,
-                name: venueDoc.name,
+                uuid: venueDoc.uuid || null,
+                name: venueDoc.name || "Unknown",
             } : null,
 
             // Legacy/Display fields
-            player1_name: matchData.player1,
-            player2_name: matchData.player2,
-            location_name: matchData.location,
+            player1_name: matchData.player1 || "Unknown",
+            player2_name: matchData.player2 || "Unknown",
+            location_name: matchData.location || "Unknown",
 
             date: matchData.date || new Date().toISOString(),
             sets: matchData.sets.map(s => ({
@@ -382,21 +374,41 @@ export async function seedMatches() {
         return false;
     }
 }
-// DELETE ALL matches (for testing/reset)
-export async function deleteAllMatches() {
+// DELETE CURRENT USER'S matches (Clean Reset)
+// Also deletes all opponents and venues for a full reset
+export async function clearUserMatches() {
     try {
-        console.log("Deleting ALL matches...");
-        const snapshot = await getDocs(collection(db, "matches"));
+        const user = auth.currentUser;
+        if (!user) throw new Error("No authenticated user");
 
-        const deletePromises = snapshot.docs.map(doc =>
-            deleteDoc(doc.ref)
+        console.log("Starting Full Reset for user:", user.uid);
+
+        // 1. Delete Matches
+        const q = query(
+            collection(db, "matches"),
+            where("ownerId", "==", user.uid)
         );
+        const snapshot = await getDocs(q);
 
-        await Promise.all(deletePromises);
-        console.log(`Deleted ${deletePromises.length} matches.`);
+        if (!snapshot.empty) {
+            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+            console.log(`Deleted ${deletePromises.length} matches.`);
+        } else {
+            console.log("No matches found to delete.");
+        }
+
+        // 2. Delete Venues (Global/Shared in this context)
+        const { deleteAllVenues } = require('./venueService');
+        await deleteAllVenues();
+
+        // 3. Delete Opponents (All users except self)
+        const { deleteOpponents } = require('./userService');
+        await deleteOpponents(user.uid);
+
         return true;
     } catch (e) {
-        console.error("Error deleting all matches:", e);
+        console.error("Error clearing user data:", e);
         return false;
     }
 }
