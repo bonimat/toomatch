@@ -127,6 +127,18 @@ export const TRANSLATIONS = {
         PLACEHOLDER_NAME: "es. 'Mario T.'",
         PLACEHOLDER_VENUE: "Nome del Club",
 
+        // MISSING KEYS
+        MATCH_OPTIONS: "OPZIONI PARTITA",
+        PERMISSION_NEEDED: "Permesso Necessario",
+        NICKNAME_REQUIRED: "Nickname (o Nome) obbligatorio.",
+        CANCEL_REGISTRATION: "Annulla Registrazione",
+        CANCEL_REGISTRATION_CONFIRM: "Vuoi annullare la registrazione? Il tuo account verrà eliminato.",
+        NO: "NO",
+        YES_DELETE: "SÌ, ELIMINA",
+        CLEAR_DATA: "Cancella Dati",
+        CLEAR_DATA_CONFIRM: "Vuoi eliminare TUTTE le tue partite? L'account rimarrà attivo. Azione irreversibile.",
+        DELETE_ALL: "ELIMINA TUTTO",
+
         // COMMON
         LOADING: "Caricamento...",
         ERROR: "Errore",
@@ -258,6 +270,18 @@ export const TRANSLATIONS = {
         ERROR_SAVE: "Could not save.",
         PLACEHOLDER_NAME: "e.g. 'Mario T.'",
         PLACEHOLDER_VENUE: "Club Name",
+
+        // MISSING KEYS
+        MATCH_OPTIONS: "MATCH OPTIONS",
+        PERMISSION_NEEDED: "Permission Needed",
+        NICKNAME_REQUIRED: "Nickname (or First Name) is required.",
+        CANCEL_REGISTRATION: "Cancel Registration",
+        CANCEL_REGISTRATION_CONFIRM: "Do you want to cancel the registration process? Your account will be deleted.",
+        NO: "NO",
+        YES_DELETE: "YES, DELETE",
+        CLEAR_DATA: "Clear Data",
+        CLEAR_DATA_CONFIRM: "This will delete ALL your matches but keep your account. This cannot be undone.",
+        DELETE_ALL: "DELETE ALL",
 
         // COMMON
         LOADING: "Loading...",

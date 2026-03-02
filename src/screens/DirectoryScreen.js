@@ -204,10 +204,11 @@ export default function DirectoryScreen({ navigation }) {
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>{t('CLUBHOUSE')}</Text>
 
-                {/* TEMP: Test Data Button */}
-                <TouchableOpacity onPress={handleSeed} disabled={seeding} style={{ marginRight: 10, padding: 5, backgroundColor: '#333', borderRadius: 5 }}>
-                    <Text style={{ color: 'white', fontSize: 10 }}>{seeding ? '...' : 'Seed Data'}</Text>
-                </TouchableOpacity>
+                {__DEV__ && (
+                    <TouchableOpacity onPress={handleSeed} disabled={seeding} style={{ marginRight: 10, padding: 5, backgroundColor: '#333', borderRadius: 5 }}>
+                        <Text style={{ color: 'white', fontSize: 10 }}>{seeding ? '...' : 'Seed Data'}</Text>
+                    </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                     style={styles.addButton}

@@ -133,17 +133,19 @@ export default function AdminScreen() {
                     </Text>
                 </View>
 
-                {/* SEED SECTION */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>TEST DATA</Text>
-                    <TouchableOpacity style={styles.actionBtn} onPress={handleSeedData} disabled={loading}>
-                        <Ionicons name="leaf" size={20} color="#000" style={{ marginRight: 10 }} />
-                        <Text style={styles.btnText}>SEED DATABASE (Populate)</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.description}>
-                        Generates ~15 Users, ~5 Venues, ~30 Matches linked to YOU.
-                    </Text>
-                </View>
+                {/* SEED SECTION (Dev Only) */}
+                {__DEV__ && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>TEST DATA</Text>
+                        <TouchableOpacity style={styles.actionBtn} onPress={handleSeedData} disabled={loading}>
+                            <Ionicons name="leaf" size={20} color="#000" style={{ marginRight: 10 }} />
+                            <Text style={styles.btnText}>SEED DATABASE (Populate)</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.description}>
+                            Generates ~15 Users, ~5 Venues, ~30 Matches linked to YOU.
+                        </Text>
+                    </View>
+                )}
 
                 {/* RESET SECTION */}
                 <View style={[styles.section, { borderColor: '#ff3b30' }]}>
