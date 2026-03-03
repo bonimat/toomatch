@@ -17,8 +17,8 @@
     "android": {
       "package": "com.bonimat.toomatch",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#000080"
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "backgroundColor": "#000000"
       }
     },
     "web": {
